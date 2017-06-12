@@ -1,0 +1,548 @@
+#!/usr/bin/env python
+
+import numpy as np
+import pandas as pd
+from pandas import Series, DataFrame
+import argparse
+import subprocess
+import re
+import json
+import os
+import sys
+import logging
+import pkg_resources
+from collections import Counter
+
+from allensdk.core.nwb_data_set import NwbDataSet
+
+import lims_utils
+import check_fi_shift
+import sweep_functions as sf
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
+def get_cap_check_indices(i):
+    """Find the indices of the upward and downward pulses in the current trace `i`
+
+    Assumes that there is a test pulse followed by the stimulus pulses (downward first)
+    """
+    di = np.diff(i)
+    up_idx = np.flatnonzero(di > 0)
+    down_idx = np.flatnonzero(di < 0)
+
+    return up_idx[2::2], down_idx[1::2]
+
+
+def find_core1_trace(data_set, c1_sweeps):
+    """Identify a Core 1 long square sweep as the optimization target"""
+    ext = sf.sweep_set_extractor_from_list(c1_sweeps, data_set,
+                                           sf.C1LS_START, sf.C1LS_END)
+    ext.process_spikes()
+
+    sweep_info = []
+    for sweep_num, swp in zip(c1_sweeps, ext.sweeps()):
+        sweep_info.append({"amp": swp.sweep_feature("stim_amp"),
+                           "rate": swp.sweep_feature("avg_rate"),
+                           "quality": is_trace_good_quality(swp),
+                           "isi_cv": swp.sweep_feature("isi_cv"),
+                           "sweep_num": sweep_num})
+
+    rheobase_amp = 1e12
+    for s in sweep_info:
+        if s["amp"] < rheobase_amp and s["rate"] > 0:
+            rheobase_amp = s["amp"]
+    sweep_to_use_amp = 1e12
+    sweep_to_use_isi_cv = 1e12
+    sweep_to_use = -1
+    for s in sweep_info:
+        if s["quality"] and s["amp"] >= 39.0 + rheobase_amp and s["isi_cv"] < 1.2 * sweep_to_use_isi_cv:
+            use_new_sweep = False
+            if sweep_to_use_isi_cv > 0.3 and ((sweep_to_use_isi_cv - s["isi_cv"]) / sweep_to_use_isi_cv) >= 0.2:
+                use_new_sweep = True
+            elif s["amp"] < sweep_to_use_amp:
+                use_new_sweep = True
+            if use_new_sweep:
+                print "now using sweep", s["sweep_num"]
+                sweep_to_use = s["sweep_num"]
+                sweep_to_use_amp = s["amp"]
+                sweep_to_use_isi_cv = s["isi_cv"]
+    if sweep_to_use == -1:
+        print "Could not find appropriate core 1 sweep!"
+        return []
+    else:
+        return [sweep_to_use]
+
+
+def is_trace_good_quality(swp):
+    """Check whether the sweep passes several quality criteria:
+    - Exceeds minimum rate of 5 spikes/sec
+    - Is not transient, defined as the time from the last spike to the
+      end of the stimulus being twice as long as the average of the last two
+      interspike intervals
+    - Does not have a pause (defined by check_for_pause() below)
+
+    Parameter:
+    swp: EphysSweepFeatureExtractor
+        Trace to check
+    """
+    spike_times = swp.spike_feature("threshold_t")
+    rate = swp.sweep_feature("avg_rate")
+
+    min_rate = 5.
+    if rate < min_rate:
+        return False
+
+    time_to_end = swp.end - spike_times[-1]
+    avg_end_isi = ((spike_times[-1] - spike_times[-2]) + (spike_times[-2] - spike_times[-3])) / 2.
+
+    if time_to_end > 2. * avg_end_isi:
+        return False
+
+    isis = np.diff(spike_times)
+    if check_for_pause(isis):
+        return False
+
+    return True
+
+
+def check_for_pause(isis):
+    """Check whether the sweep has a pause (roughly defined)
+
+    A pause here is an interspike interval (ISI) that is at least three times
+    longer than its adjacent ISIs.
+
+    Parameter:
+    swp: EphysSweepFeatureExtractor
+        Trace to check
+    """
+    if len(isis) <= 2:
+        return False
+
+    for i, isi in enumerate(isis[1:-1]):
+        if isi > 3 * isis[i + 1 - 1] and isi > 3 * isis[i + 1 + 1]:
+            return True
+    return False
+
+
+def slow_trough_norm_t(swp):
+    threshold_t = swp.spike_feature("threshold_t")
+    slow_trough_t = swp.spike_feature("slow_trough_t")
+
+    if len(threshold_t) == 0:
+        return np.array([])
+    elif len(threshold_t) == 1:
+        return np.array([(slow_trough_t[0] - threshold_t[0]) / (swp.end - threshold_t[0])])
+
+    isis = np.diff(threshold_t)
+    isis = np.append(isis, (swp.end - threshold_t[-1]))
+    trough_intervals = slow_trough_t - threshold_t
+    return trough_intervals / isis
+
+
+def target_features(ext):
+    """Determine target features from sweeps in set extractor"""
+    ext.process_spikes()
+    for swp in ext.sweeps():
+        swp.process_new_spike_feature("slow_trough_norm_t", slow_trough_norm_t)
+
+    sweep_keys = swp.sweep_feature_keys()
+    spike_keys = swp.spike_feature_keys()
+
+    min_std_dict = {
+        'avg_rate': 0.5,
+        'adapt': 0.001,
+        'peak_v': 2.0,
+        'trough_v': 2.0,
+        'fast_trough_v': 2.0,
+        'slow_trough_v': 2.0,
+        'slow_trough_norm_t': 0.05,
+        'latency': 5.0,
+        'isi_cv': 0.1,
+        'mean_isi': 0.5,
+        'first_isi': 1.0,
+        'v_baseline': 2.0,
+        'width': 0.1,
+        'upstroke': 5.0,
+        'downstroke': 5.0,
+        'upstroke_v': 2.0,
+        'downstroke_v': 2.0,
+        'threshold_v': 2.0,
+    }
+
+    target_features = []
+    for k in min_std_dict:
+        if k in sweep_keys:
+            values = ext.sweep_features(k)
+        elif k in spike_keys():
+            values = ext.spike_feature_averages(k)
+        else:
+            logger.debug("Could not find feature %s", k)
+            continue
+
+        t = {"name": k, "mean": values.mean(), "stdev": values.std()}
+        if min_std_dict[k] > values.std():
+            t["stdev"] = min_std_dict[k]
+        target_features.append(t)
+    return target_features
+
+
+def select_sweeps(sweeps_input, data_set):
+    """Identify the sweep or sweeps to use as targets for optimization
+
+    Selects a Core 1 sweep if the Core 2 sweeps do not exist or if the
+    f-I curve has shifted by at least 30 pA.
+
+    Parameters
+    ----------
+    sweeps_input: dict
+        Dictionary with relevant sweep numbers in `core_1_long_squares` and
+        core_2_long_squares` keys
+    data_set: NwbDataSet
+        container of sweep data
+
+    Returns
+    -------
+    sweeps_to_fit: list
+        sweep numbers of sweeps for optimization target
+    start: float
+        time of stimulus start (in seconds)
+    end: float
+        time of stimulus end (in seconds)
+    """
+    fi_shift, n_core2 = check_fi_shift.estimate_fi_shift(sweeps_input, data_set)
+    fi_shift_threshold = 30.0
+    if abs(fi_shift) > fi_shift_threshold:
+        logger.info("f-I curve shifted; using Core 1")
+        sweeps_to_fit = find_core1_trace(data_set, sweeps_input["core_1_long_squares"])
+        start, end = sf.C1LS_START, sf.C1LS_END
+    else:
+        c2_ext = sf.sweep_set_extractor_from_list(sweeps_input["core_2_long_squares"],
+                                                  data_set, sf.C2LS_START, sf.C2LS_END)
+        core2_amp_counter = Counter(c2_ext.sweep_features("stim_amp"))
+        common_amps = [a[0] for a in core2_amp_counter.most_common(3)]
+
+        n_good = {a: 0 for a in common_amps}
+        sweeps_by_amp = {a: [] for a in common_amps}
+        for i, swp in enumerate(c2_ext.sweeps()):
+            amp = swp.sweep_feature("stim_amp")
+            if is_trace_good_quality(swp):
+                n_good[amp] += 1
+                sweeps_by_amp[amp].append(i)
+
+        if max(n_good.values()) <= 1:
+            logger.info("Not enough good Core 2 traces; using Core 1")
+            sweeps_to_fit = find_core1_trace(data_set, sweeps_input["core_1_long_squares"])
+            start, end = sf.C1LS_START, sf.C1LS_END
+        else:
+            best_amp = max(n_good, key=(lambda key: n_good[key]))
+            sweeps_to_fit = np.array(sweeps_input["core_2_long_squares"])[sweeps_by_amp[best_amp]]
+            start, end = sf.C2LS_START, sf.C2LS_END
+
+    return sweeps_to_fit, start, end
+
+
+def passive_fitting(sweeps, bridge_avg, is_spiny, data_set, swc_path):
+    """Perform passive fit variations on capacitance-check sweeps
+
+    Parameters
+    ----------
+    sweeps : list
+        list of sweep numbers of capacitance-check sweeps
+    bridge_avg: float
+        average of bridge-balance value during the sweeps
+    is_spiny: bool
+        True if neuron has dendritic spines
+    data_set: NwbDataSet
+        container of sweep data
+    swc_path: str
+        path to SWC morphology file
+
+    Returns
+    -------
+    ra: float
+        estimated axial resistance
+    cm1: float
+        estimated membrane capacitance of soma & axon
+    cm2: float
+        estimated membrane capactiance of dendrite
+    passive_info: dict
+        information about fitting from NEURON
+    """
+    passive_info = {}
+    if len(sweeps) == 0:
+        logger.info("No cap check trace found")
+
+        # Use default values
+        ra = 100.0
+        cm1 = 1.0
+        if is_spiny:
+            cm2 = 2.0
+        else:
+            cm2 = 1.0
+
+        return ra, cm1, cm2, passive_info
+
+    up_avgs = {}
+    down_avgs = {}
+    initialized = False
+
+    grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
+
+    # Save to local storage to be loaded by NEURON fitting scripts
+    storage_directory = "." # TODO: Figure out what this should be
+    upfile = os.path.join(storage_directory, "upbase.dat")
+    downfile = os.path.join(storage_directory, "downbase.dat")
+    with open(upfile, 'w') as f:
+        np.savetxt(f, np.column_stack((t, grand_up)))
+    with open(downfile, 'w') as f:
+        np.savetxt(f, np.column_stack((t, grand_down)))
+
+    # Determine for how long the upward and downward responses are consistent
+    grand_diff = (grand_up + grand_down) / grand_up
+    avg_grand_diff = pd.rolling_mean(Series(grand_diff, index=t), 100)
+    threshold = 0.2
+    start_index = np.flatnonzero(t >= 4.0)[0]
+    escape_indexes = np.flatnonzero(np.abs(avg_grand_diff.values[start_index:]) > threshold) + start_index
+    if len(escape_indexes) < 1:
+        escape_index = len(t) - 1
+    else:
+        escape_index = escape_indexes[0]
+    escape_t = t[escape_index]
+
+    passive_info["bridge"] = bridge_avg
+    passive_info["escape_time"] = escape_t
+
+    # Fit type 1 - Allows Ra, Cm, Rm to vary
+    fit_1_exec = pkg_resources.resource_filename(__name__, "passive_fitting/neuron_passive_fit.py")
+    fit_1_params = [fit_1_exec, upfile, downfile, str(escape_t), swc_path]
+    fit_1_output = subprocess.check_output(fit_1_params)
+    passive_info["fit_1"] = _process_passive_fit_output(fit_1_output)
+
+    # Fit type 2 - Allows Cm, Rm to vary & fixes Ra = 100
+    fit_2_exec = pkg_resources.resource_filename(__name__, "passive_fitting/neuron_passive_fit2.py")
+    fit_2_params = [fit_2_exec, upfile, downfile, str(escape_t), swc_path]
+    fit_2_output = subprocess.check_output(fit_2_params)
+    passive_info["fit_2"] = _process_passive_fit_output(fit_2_output)
+    fit_2_lines = fit_2_output.decode('utf-8').split("\n")
+
+    # Fit type 3 - Allows Ra, Cm, Rm to vary & models the recording electrode
+    fit_3_exec = pkg_resources.resource_filename(__name__, "passive_fitting/neuron_passive_fit_elec.py")
+    fit_3_params = [fit_3_exec, upfile, downfile, str(escape_t), str(bridge_avg), "1.0", swc_path]
+    fit_3_output = subprocess.check_output(fit_3_params)
+    fit_3_lines = fit_3_output.decode('utf-8').split("\n")
+    passive_info["fit_3"] = _process_passive_fit_output(fit_3_output)
+
+    # Check for various fitting outcomes and pick best results
+    cm_rel_delta = (passive_info["fit_1"]["Cm"] - passive_info["fit_3"]["Cm"]) / passive_info["fit_1"]["Cm"]
+    if passive_info["fit_2"]["err"] < passive_info["fit_1"]["err"]:
+        logger.info("Fixed Ri gave better results than original")
+        if passive_info["fit_2"]["err"] < passive_info["fit_3"]["err"]:
+            logger.info("Using fixed Ri results")
+            passive_info["fit_for_next_step"] = passive_info["fit_2"]
+        else:
+            logger.info("Using electrode results")
+            passive_info["fit_for_next_step"] = passive_info["fit_3"]
+    elif abs(cm_rel_delta) > 0.1:
+        logger.info("Original and electrode fits not in agreement")
+        logger.debug("original Cm: %g", passive_info["fit_1"]["Cm"])
+        logger.debug("w/ electrode Cm: %g", passive_info["fit_3"]["Cm"])
+        if passive_info["fit_1"]["err"] < passive_info["fit_3"]["err"]:
+            logger.info("Original has lower error")
+            passive_info["fit_for_next_step"] = passive_info["fit_1"]
+        else:
+            logger.info("Electrode has lower error")
+            passive_info["fit_for_next_step"] = passive_info["fit_3"]
+    else:
+        passive_info["fit_for_next_step"] = passive_info["fit_1"]
+
+    ra = passive_info["fit_for_next_step"]["Ri"]
+    if is_spiny:
+        combo_cm = passive_info["fit_for_next_step"]["Cm"]
+        a1 = passive_info["fit_for_next_step"]["A1"]
+        a2 = passive_info["fit_for_next_step"]["A2"]
+        cm1 = 1.0
+        cm2 = (combo_cm * (a1 + a2) - a1) / a2
+    else:
+        cm1 = passive_info["fit_for_next_step"]["Cm"]
+        cm2 = passive_info["fit_for_next_step"]["Cm"]
+
+    return ra, cm1, cm2, passive_info
+
+
+def _process_passive_fit_output(output):
+    """String-process to get input from subprocess NEURON passive fit runs"""
+    lines = output.decode('utf-8').split("\n")
+    data = {}
+    for i, k in enumerate(["A1", "A2", "Ri", "Cm", "Rm", "err"]):
+        line_vals = re.split('\s+', lines[-7 + i].strip())
+        data[k] = float(line_vals[-1])
+    return data
+
+
+def cap_check_grand_averages(sweeps, data_set):
+    """Average and baseline identical sections of capacitance check sweeps
+
+    Parameters
+    ----------
+    sweeps: list
+        list of sweep numbers of capacitance check sweeps
+    data_set: NwbDataSet
+        container of sweep data
+
+    Returns
+    -------
+    grand_up: ndarray
+    grand_down: ndarray
+        Averages of responses to depolarizing (`grand_up`) and hyperpolarizing
+        (`grand_down`) pulses
+    t: ndarray
+        Time data for grand_up and grand_down in ms
+    """
+    for idx, s in enumerate(sweeps):
+        v, i, t = lims_utils.get_sweep_v_i_t_from_set(data_set, s)
+        passive_delta_t = (t[1] - t[0]) * 1e3 # in ms
+        extra_interval = 2. # ms
+        extra = int(extra_interval / passive_delta_t)
+        up_idxs, down_idxs = get_cap_check_indices(i)
+
+        down_idx_interval = down_idxs[1] - down_idxs[0]
+        skip_count = 0
+        for j in range(len(up_idxs)):
+            if j == 0:
+                avg_up = v[(up_idxs[j] - extra):down_idxs[j + 1]]
+                avg_down = v[(down_idxs[j] - extra):up_idxs[j]]
+            elif j == len(up_idxs) - 1:
+                avg_up = avg_up + v[(up_idxs[j] - extra):-1]
+                avg_down = avg_down + v[(down_idxs[j] - extra):up_idxs[j]]
+            else:
+                avg_up = avg_up + v[(up_idxs[j] - extra):down_idxs[j + 1]]
+                avg_down = avg_down + v[(down_idxs[j] - extra):up_idxs[j]]
+        avg_up /= len(up_idxs) - skip_count
+        avg_down /= len(up_idxs) - skip_count
+        if not initialized:
+            grand_up = avg_up - avg_up[0:extra].mean()
+            grand_down = avg_down - avg_down[0:extra].mean()
+            initialized = True
+        else:
+            grand_up = grand_up + (avg_up - avg_up[0:extra].mean())
+            grand_down = grand_down + (avg_down - avg_down[0:extra].mean())
+    grand_up /= len(sweeps)
+    grand_down /= len(sweeps)
+    t = passive_delta_t * np.arange(len(grand_up)) # in ms
+
+    return grand_up, grand_down, t
+
+
+def max_i_for_depol_block_check(sweeps_input, data_set):
+    """Determine highest step to check for depolarization block"""
+    noise_1_sweeps = sweeps_input["seed_1_noise"]
+    noise_2_sweeps = sweeps_input["seed_2_noise"]
+    step_sweeps = sweeps_input["core_1_long_squares"]
+    all_sweeps = noise_1_sweeps + noise_2_sweeps + step_sweeps
+
+    max_i = 0
+    for s in all_sweeps:
+        v, i, t = lims_utils.get_sweep_v_i_t_from_set(data_set, s)
+        if np.max(i) > max_i:
+            max_i = np.max(i)
+    max_i += 10 # add 10 pA
+    max_i *= 1e-3 # convert to nA
+    return max_i
+
+
+def main(input_file, output_file):
+    """Main sequence of pre-processing and passive fitting"""
+    with open(input_file, "r") as f:
+        input = json.load(f)
+
+    nwb_path = input["nwb_path"]
+    swc_path = input["swc_path"]
+
+    data_set = NwbDataSet(nwb_path)
+
+    dendrite_type_tag = input["dendrite_type_tag"]
+    is_spiny = True
+    if dendrite_type_tag == "dendrite type - aspiny":
+        is_spiny = False
+
+    # Check for fi curve shift to decide to use core1 or core2
+    sweeps_to_fit, start, end = select_sweeps(input["sweeps"], data_set)
+    if len(sweeps_to_fit) == 0:
+        logger.info("No usable sweeps found")
+        sys.exit()
+    ra, cm1, cm2, passive_info = passive_fitting(input["sweeps"],
+                                                 input["bridge_avg"],
+                                                 is_spiny, data_set, swc_path)
+
+    jxn = -14.0
+
+    ext = sf.sweep_set_extractor_from_list(sweeps_to_fit, data_set, start, end, jxn=jxn)
+    targets = target_features(ext)
+    max_i = max_i_for_depol_block_check(input["sweeps"], data_set)
+
+    # Decide which fit(s) we are doing
+    if (is_spiny and targets["width"]["mean"] < 0.8) or (not is_spiny and targets["width"]["mean"] > 0.8):
+        fit_types = ["f6", "f12"]
+    elif is_spiny:
+        fit_types = ["f6"]
+    else:
+        fit_types = ["f12"]
+
+    seeds = [1234, 1001, 4321, 1024, 2048]
+
+    jobs = [{"fit_type": fit_type, "seed": seed} for seed in seeds
+            for fit_type in fit_types]
+
+    swc_data = pd.read_table(swc_path, sep='\s+', comment='#', header=None)
+    has_apic = False
+    if 4 in pd.unique(swc_data[1]):
+        has_apic = True
+        logger.debug("Has apical dendrite")
+    else:
+        logger.debug("Does not have apical dendrite")
+
+    swp = ext.sweeps()[0]
+    stim_amp = swp.sweep_feature("stim_amp")
+    stim_dur = swp.end - swp.start
+
+    output = {
+        "swc_path": swc_path,
+        "nwb_path": nwb_path,
+        "is_spiny": is_spiny,
+        "has_apical": has_apical,
+        "sweeps_to_fit": sweeps_to_fit,
+        "junction_potential": jxn,
+        "max_stim_test_na": max_i,
+        "passive": {
+            "ra": ra,
+            "cm": { "soma": cm1, "axon": cm1, "dend": cm2 },
+            "e_pas": targets["v_baseline"]["mean"],
+            "info": passive_info,
+        },
+        "stimulus": {
+            "amplitude": 1e-3 * stim_amp,
+            "delay": 1e3,
+            "duration": 1e3 * stim_dur,
+        },
+        "job_list": jobs,
+        "target_features": targets,
+    }
+
+    if has_apic:
+        output["passive"]["cm"]["apic"] = cm2
+
+    with open(output_file, "w") as f:
+        json.dump(output, f, indent=2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Pre-process and perform passive fit in workflow engine')
+    parser.add_argument('-i', '--input', type=str)
+    parser.add_argument('-o', '--output', type=str)
+
+    args = parser.parse_args()
+
+    main(args.input, args.output)

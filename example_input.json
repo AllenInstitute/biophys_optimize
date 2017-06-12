@@ -1,0 +1,13 @@
+{
+	"nwb_path": "",
+	"swc_path": "",
+	"dendrite_type_tag": "",
+	"sweeps": {
+		"core_1_long_squares": [],
+		"core_2_long_squares": [],
+		"seed_1_noise": [],
+		"seed_2_noise": [],
+		"cap_checks": []
+	},
+	"bridge_avg": ""
+}
