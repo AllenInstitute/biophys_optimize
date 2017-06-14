@@ -150,12 +150,12 @@ def target_features(ext):
         'fast_trough_v': 2.0,
         'slow_trough_delta_v': 0.5,
         'slow_trough_norm_t': 0.05,
-        'latency': 5.0,
+        'latency': 5.0 * 1e-3, # seconds
         'isi_cv': 0.1,
-        'mean_isi': 0.5,
-        'first_isi': 1.0,
+        'mean_isi': 0.5 * 1e-3, # seconds
+        'first_isi': 1.0 * 1e-3, # seconds
         'v_baseline': 2.0,
-        'width': 0.1,
+        'width': 0.1 * 1e-3, # seconds
         'upstroke': 5.0,
         'downstroke': 5.0,
         'upstroke_v': 2.0,
@@ -178,9 +178,6 @@ def target_features(ext):
             t["stdev"] = min_std_dict[k]
         target_features.append(t)
 
-    for swp in ext.sweeps():
-        print swp.spike_feature("width")
-        print swp.spike_feature("clipped")
     return target_features
 
 
