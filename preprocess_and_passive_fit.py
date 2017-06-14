@@ -15,7 +15,6 @@ from collections import Counter
 
 from allensdk.core.nwb_data_set import NwbDataSet
 
-import lims_utils
 import check_fi_shift
 import sweep_functions as sf
 
@@ -396,7 +395,7 @@ def cap_check_grand_averages(sweeps, data_set):
     """
     initialized = False
     for s in sweeps:
-        v, i, t = lims_utils.get_sweep_v_i_t_from_set(data_set, s)
+        v, i, t = sf.get_sweep_v_i_t_from_set(data_set, s)
         passive_delta_t = (t[1] - t[0]) * 1e3 # in ms
         extra_interval = 2. # ms
         extra = int(extra_interval / passive_delta_t)
@@ -439,7 +438,7 @@ def max_i_for_depol_block_check(sweeps_input, data_set):
 
     max_i = 0
     for s in all_sweeps:
-        v, i, t = lims_utils.get_sweep_v_i_t_from_set(data_set, s)
+        v, i, t = sf.get_sweep_v_i_t_from_set(data_set, s)
         if np.max(i) > max_i:
             max_i = np.max(i)
     max_i += 10 # add 10 pA
@@ -525,6 +524,7 @@ def main(input_file, output_file):
         },
         "job_list": jobs,
         "target_features": targets,
+        "sweeps": input["sweeps"],
     }
 
     if has_apical:

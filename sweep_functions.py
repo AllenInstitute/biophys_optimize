@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import numpy as np
-import lims_utils
 from allensdk.ephys.ephys_extractor import EphysSweepSetFeatureExtractor, _step_stim_amp
 
 
@@ -11,12 +10,23 @@ C2LS_START = 1.02 # seconds
 C2LS_END = 3.02 # seconds
 
 
+def get_sweep_v_i_t_from_set(data_set, sweep_number):
+    sweep_data = data_set.get_sweep(sweep_number)
+    i = sweep_data["stimulus"] # in A
+    v = sweep_data["response"] # in V
+    i *= 1e12 # to pA
+    v *= 1e3 # to mV
+    sampling_rate = sweep_data["sampling_rate"] # in Hz
+    t = np.arange(0, len(v)) * (1.0 / sampling_rate)
+    return v, i, t
+
+
 def sweep_set_extractor_from_list(sweep_list, data_set, start, end, jxn=None):
     v_set = []
     t_set = []
     i_set = []
     for s in sweep_list:
-        v, i, t = lims_utils.get_sweep_v_i_t_from_set(data_set, s)
+        v, i, t = get_sweep_v_i_t_from_set(data_set, s)
         if jxn:
             v += jxn
         v_set.append(v)
