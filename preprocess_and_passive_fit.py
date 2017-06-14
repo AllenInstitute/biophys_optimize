@@ -47,7 +47,7 @@ def find_core1_trace(data_set, c1_sweeps):
         sweep_info.append({"amp": swp.sweep_feature("stim_amp"),
                            "rate": swp.sweep_feature("avg_rate"),
                            "quality": is_trace_good_quality(swp),
-                           "isi_cv": swp.sweep_feature("isi_cv"),
+                           "isi_cv": swp.sweep_feature("isi_cv") if swp.sweep_feature("avg_rate") > 0 else np.nan,
                            "sweep_num": sweep_num})
 
     rheobase_amp = 1e12
@@ -65,12 +65,12 @@ def find_core1_trace(data_set, c1_sweeps):
             elif s["amp"] < sweep_to_use_amp:
                 use_new_sweep = True
             if use_new_sweep:
-                print "now using sweep", s["sweep_num"]
+                logger.info("now using sweep %d", s["sweep_num"])
                 sweep_to_use = s["sweep_num"]
                 sweep_to_use_amp = s["amp"]
                 sweep_to_use_isi_cv = s["isi_cv"]
     if sweep_to_use == -1:
-        print "Could not find appropriate core 1 sweep!"
+        logger.info("Could not find appropriate core 1 sweep!")
         return []
     else:
         return [sweep_to_use]
@@ -127,26 +127,17 @@ def check_for_pause(isis):
     return False
 
 
-def slow_trough_norm_t(swp):
-    threshold_t = swp.spike_feature("threshold_t")
-    slow_trough_t = swp.spike_feature("slow_trough_t")
-
-    if len(threshold_t) == 0:
-        return np.array([])
-    elif len(threshold_t) == 1:
-        return np.array([(slow_trough_t[0] - threshold_t[0]) / (swp.end - threshold_t[0])])
-
-    isis = np.diff(threshold_t)
-    isis = np.append(isis, (swp.end - threshold_t[-1]))
-    trough_intervals = slow_trough_t - threshold_t
-    return trough_intervals / isis
-
-
 def target_features(ext):
     """Determine target features from sweeps in set extractor"""
     ext.process_spikes()
     for swp in ext.sweeps():
-        swp.process_new_spike_feature("slow_trough_norm_t", slow_trough_norm_t)
+        swp.sweep_feature("v_baseline") # Pre-compute all the baselines, too
+        swp.process_new_spike_feature("slow_trough_norm_t",
+                                      sf.slow_trough_norm_t,
+                                      affected_by_clipping=True)
+        swp.process_new_spike_feature("slow_trough_delta_v",
+                                      sf.slow_trough_delta_voltage_feature,
+                                      affected_by_clipping=True)
 
     sweep_keys = swp.sweep_feature_keys()
     spike_keys = swp.spike_feature_keys()
@@ -157,7 +148,7 @@ def target_features(ext):
         'peak_v': 2.0,
         'trough_v': 2.0,
         'fast_trough_v': 2.0,
-        'slow_trough_v': 2.0,
+        'slow_trough_delta_v': 0.5,
         'slow_trough_norm_t': 0.05,
         'latency': 5.0,
         'isi_cv': 0.1,
@@ -176,16 +167,20 @@ def target_features(ext):
     for k in min_std_dict:
         if k in sweep_keys:
             values = ext.sweep_features(k)
-        elif k in spike_keys():
+        elif k in spike_keys:
             values = ext.spike_feature_averages(k)
         else:
             logger.debug("Could not find feature %s", k)
             continue
 
-        t = {"name": k, "mean": values.mean(), "stdev": values.std()}
-        if min_std_dict[k] > values.std():
+        t = {"name": k, "mean": float(values.mean()), "stdev": float(values.std())}
+        if min_std_dict[k] > t["stdev"]:
             t["stdev"] = min_std_dict[k]
         target_features.append(t)
+
+    for swp in ext.sweeps():
+        print swp.spike_feature("width")
+        print swp.spike_feature("clipped")
     return target_features
 
 
@@ -221,6 +216,7 @@ def select_sweeps(sweeps_input, data_set):
     else:
         c2_ext = sf.sweep_set_extractor_from_list(sweeps_input["core_2_long_squares"],
                                                   data_set, sf.C2LS_START, sf.C2LS_END)
+        c2_ext.process_spikes()
         core2_amp_counter = Counter(c2_ext.sweep_features("stim_amp"))
         common_amps = [a[0] for a in core2_amp_counter.most_common(3)]
 
@@ -401,7 +397,8 @@ def cap_check_grand_averages(sweeps, data_set):
     t: ndarray
         Time data for grand_up and grand_down in ms
     """
-    for idx, s in enumerate(sweeps):
+    initialized = False
+    for s in sweeps:
         v, i, t = lims_utils.get_sweep_v_i_t_from_set(data_set, s)
         passive_delta_t = (t[1] - t[0]) * 1e3 # in ms
         extra_interval = 2. # ms
@@ -409,19 +406,19 @@ def cap_check_grand_averages(sweeps, data_set):
         up_idxs, down_idxs = get_cap_check_indices(i)
 
         down_idx_interval = down_idxs[1] - down_idxs[0]
-        skip_count = 0
+        inter_stim_interval = up_idxs[0] - down_idxs[0]
         for j in range(len(up_idxs)):
             if j == 0:
                 avg_up = v[(up_idxs[j] - extra):down_idxs[j + 1]]
                 avg_down = v[(down_idxs[j] - extra):up_idxs[j]]
             elif j == len(up_idxs) - 1:
-                avg_up = avg_up + v[(up_idxs[j] - extra):-1]
+                avg_up = avg_up + v[(up_idxs[j] - extra):up_idxs[j] + inter_stim_interval]
                 avg_down = avg_down + v[(down_idxs[j] - extra):up_idxs[j]]
             else:
                 avg_up = avg_up + v[(up_idxs[j] - extra):down_idxs[j + 1]]
                 avg_down = avg_down + v[(down_idxs[j] - extra):up_idxs[j]]
-        avg_up /= len(up_idxs) - skip_count
-        avg_down /= len(up_idxs) - skip_count
+        avg_up /= len(up_idxs)
+        avg_down /= len(up_idxs)
         if not initialized:
             grand_up = avg_up - avg_up[0:extra].mean()
             grand_down = avg_down - avg_down[0:extra].mean()
@@ -473,7 +470,7 @@ def main(input_file, output_file):
     if len(sweeps_to_fit) == 0:
         logger.info("No usable sweeps found")
         sys.exit()
-    ra, cm1, cm2, passive_info = passive_fitting(input["sweeps"],
+    ra, cm1, cm2, passive_info = passive_fitting(input["sweeps"]["cap_checks"],
                                                  input["bridge_avg"],
                                                  is_spiny, data_set, swc_path)
 
@@ -484,7 +481,8 @@ def main(input_file, output_file):
     max_i = max_i_for_depol_block_check(input["sweeps"], data_set)
 
     # Decide which fit(s) we are doing
-    if (is_spiny and targets["width"]["mean"] < 0.8) or (not is_spiny and targets["width"]["mean"] > 0.8):
+    width = [target["mean"] for target in targets if target["name"] == "width"][0]
+    if (is_spiny and width < 0.8) or (not is_spiny and width > 0.8):
         fit_types = ["f6", "f12"]
     elif is_spiny:
         fit_types = ["f6"]
@@ -497,9 +495,9 @@ def main(input_file, output_file):
             for fit_type in fit_types]
 
     swc_data = pd.read_table(swc_path, sep='\s+', comment='#', header=None)
-    has_apic = False
+    has_apical = False
     if 4 in pd.unique(swc_data[1]):
-        has_apic = True
+        has_apical = True
         logger.debug("Has apical dendrite")
     else:
         logger.debug("Does not have apical dendrite")
@@ -508,18 +506,19 @@ def main(input_file, output_file):
     stim_amp = swp.sweep_feature("stim_amp")
     stim_dur = swp.end - swp.start
 
+    v_baseline = [target["mean"] for target in targets if target["name"] == "v_baseline"][0]
     output = {
         "swc_path": swc_path,
         "nwb_path": nwb_path,
         "is_spiny": is_spiny,
         "has_apical": has_apical,
-        "sweeps_to_fit": sweeps_to_fit,
+        "sweeps_to_fit": sweeps_to_fit.tolist(),
         "junction_potential": jxn,
         "max_stim_test_na": max_i,
         "passive": {
             "ra": ra,
             "cm": { "soma": cm1, "axon": cm1, "dend": cm2 },
-            "e_pas": targets["v_baseline"]["mean"],
+            "e_pas": v_baseline,
             "info": passive_info,
         },
         "stimulus": {
@@ -531,7 +530,7 @@ def main(input_file, output_file):
         "target_features": targets,
     }
 
-    if has_apic:
+    if has_apical:
         output["passive"]["cm"]["apic"] = cm2
 
     with open(output_file, "w") as f:
@@ -540,8 +539,8 @@ def main(input_file, output_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Pre-process and perform passive fit in workflow engine')
-    parser.add_argument('-i', '--input', type=str)
-    parser.add_argument('-o', '--output', type=str)
+    parser.add_argument('input', type=str)
+    parser.add_argument('output', type=str)
 
     args = parser.parse_args()
 

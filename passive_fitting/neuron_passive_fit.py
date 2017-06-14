@@ -55,11 +55,12 @@ if __name__ == "__main__":
 
     for filename in load_file_list:
         file_path = pkg_resources.resource_filename(__name__, filename)
+        print file_path
         h.load_file(file_path)
 
     h.v_init = 0
     h.tstop = 100
-    h.dt = 0.005
+    h.cvode_active(1)
 
     fit_start = 4.0025
 

@@ -1,10 +1,10 @@
 ParmFitness: Unnamed multiple run protocol
 	FitnessGenerator: iclamp_up
-		RunStatement:	2, clamp.amp = 0.2
+		RunStatement:	2, IClamp[0].amp = 0.2
 		RegionFitness:	soma.v(0.5)
 
 	FitnessGenerator: iclamp_down
-		RunStatement:	2, clamp.amp = -0.2
+		RunStatement:	2, IClamp[0].amp = -0.2
 		RegionFitness:	soma.v(0.5)
 
 	Parameters:

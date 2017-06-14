@@ -58,6 +58,7 @@ if __name__ == "__main__":
 
     h.v_init = 0
     h.tstop = 100
+    h.cvode_active(1)
 
     fit_start = 4.0025
 

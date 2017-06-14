@@ -4,11 +4,8 @@ import lims_utils
 from neuron import h
 import numpy as np
 import argparse
-import matplotlib.pyplot as plt
+import pkg_resources
 
-# Load the morphology
-
-BASEDIR = "/data/mat/nathang/deap_optimize/passive_fitting"
 
 def load_morphology(filename):
     swc = h.Import3d_SWC_read()
@@ -64,7 +61,7 @@ if __name__ == "__main__":
 
     h.v_init = 0
     h.tstop = 100
-    h.dt = 0.005
+    h.cvode_active(1)
 
     fit_start = 4.0025
 
