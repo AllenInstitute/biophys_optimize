@@ -236,8 +236,8 @@ def select_sweeps(sweeps_input, data_set):
     return sweeps_to_fit, start, end
 
 
-def passive_fitting(sweeps, bridge_avg, is_spiny, data_set, swc_path):
-    """Perform passive fit variations on capacitance-check sweeps
+def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_directory):
+    """Collect information for passive fit variations on capacitance-check sweeps
 
     Parameters
     ----------
@@ -249,42 +249,23 @@ def passive_fitting(sweeps, bridge_avg, is_spiny, data_set, swc_path):
         True if neuron has dendritic spines
     data_set: NwbDataSet
         container of sweep data
-    swc_path: str
-        path to SWC morphology file
+    storage_directory: str
+        path to storage directory
 
     Returns
     -------
-    ra: float
-        estimated axial resistance
-    cm1: float
-        estimated membrane capacitance of soma & axon
-    cm2: float
-        estimated membrane capactiance of dendrite
+    paths: dict
+        key-value set of relevant file paths
     passive_info: dict
-        information about fitting from NEURON
+        information about fitting for NEURON
     """
-    passive_info = {}
     if len(sweeps) == 0:
         logger.info("No cap check trace found")
-
-        # Use default values
-        ra = 100.0
-        cm1 = 1.0
-        if is_spiny:
-            cm2 = 2.0
-        else:
-            cm2 = 1.0
-
-        return ra, cm1, cm2, passive_info
-
-    up_avgs = {}
-    down_avgs = {}
-    initialized = False
+        return {"should_run": False}
 
     grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
 
     # Save to local storage to be loaded by NEURON fitting scripts
-    storage_directory = "." # TODO: Figure out what this should be
     upfile = os.path.join(storage_directory, "upbase.dat")
     downfile = os.path.join(storage_directory, "downbase.dat")
     with open(upfile, 'w') as f:
@@ -304,74 +285,20 @@ def passive_fitting(sweeps, bridge_avg, is_spiny, data_set, swc_path):
         escape_index = escape_indexes[0]
     escape_t = t[escape_index]
 
-    passive_info["bridge"] = bridge_avg
-    passive_info["escape_time"] = escape_t
+    paths = {
+        "up": upfile,
+        "down": downfile,
+    }
 
-    # Fit type 1 - Allows Ra, Cm, Rm to vary
-    fit_1_exec = pkg_resources.resource_filename(__name__, "passive_fitting/neuron_passive_fit.py")
-    fit_1_params = [fit_1_exec, upfile, downfile, str(escape_t), swc_path]
-    fit_1_output = subprocess.check_output(fit_1_params)
-    passive_info["fit_1"] = _process_passive_fit_output(fit_1_output)
+    passive_info = {
+        "should_run": True,
+        "bridge": bridge_avg,
+        "limit": escape_t,
+        "electrode_cap": 1.0,
+        "is_spiny": is_spiny,
+    }
 
-    # Fit type 2 - Allows Cm, Rm to vary & fixes Ra = 100
-    fit_2_exec = pkg_resources.resource_filename(__name__, "passive_fitting/neuron_passive_fit2.py")
-    fit_2_params = [fit_2_exec, upfile, downfile, str(escape_t), swc_path]
-    fit_2_output = subprocess.check_output(fit_2_params)
-    passive_info["fit_2"] = _process_passive_fit_output(fit_2_output)
-    fit_2_lines = fit_2_output.decode('utf-8').split("\n")
-
-    # Fit type 3 - Allows Ra, Cm, Rm to vary & models the recording electrode
-    fit_3_exec = pkg_resources.resource_filename(__name__, "passive_fitting/neuron_passive_fit_elec.py")
-    fit_3_params = [fit_3_exec, upfile, downfile, str(escape_t), str(bridge_avg), "1.0", swc_path]
-    fit_3_output = subprocess.check_output(fit_3_params)
-    fit_3_lines = fit_3_output.decode('utf-8').split("\n")
-    passive_info["fit_3"] = _process_passive_fit_output(fit_3_output)
-
-    # Check for various fitting outcomes and pick best results
-    cm_rel_delta = (passive_info["fit_1"]["Cm"] - passive_info["fit_3"]["Cm"]) / passive_info["fit_1"]["Cm"]
-    if passive_info["fit_2"]["err"] < passive_info["fit_1"]["err"]:
-        logger.info("Fixed Ri gave better results than original")
-        if passive_info["fit_2"]["err"] < passive_info["fit_3"]["err"]:
-            logger.info("Using fixed Ri results")
-            passive_info["fit_for_next_step"] = passive_info["fit_2"]
-        else:
-            logger.info("Using electrode results")
-            passive_info["fit_for_next_step"] = passive_info["fit_3"]
-    elif abs(cm_rel_delta) > 0.1:
-        logger.info("Original and electrode fits not in agreement")
-        logger.debug("original Cm: %g", passive_info["fit_1"]["Cm"])
-        logger.debug("w/ electrode Cm: %g", passive_info["fit_3"]["Cm"])
-        if passive_info["fit_1"]["err"] < passive_info["fit_3"]["err"]:
-            logger.info("Original has lower error")
-            passive_info["fit_for_next_step"] = passive_info["fit_1"]
-        else:
-            logger.info("Electrode has lower error")
-            passive_info["fit_for_next_step"] = passive_info["fit_3"]
-    else:
-        passive_info["fit_for_next_step"] = passive_info["fit_1"]
-
-    ra = passive_info["fit_for_next_step"]["Ri"]
-    if is_spiny:
-        combo_cm = passive_info["fit_for_next_step"]["Cm"]
-        a1 = passive_info["fit_for_next_step"]["A1"]
-        a2 = passive_info["fit_for_next_step"]["A2"]
-        cm1 = 1.0
-        cm2 = (combo_cm * (a1 + a2) - a1) / a2
-    else:
-        cm1 = passive_info["fit_for_next_step"]["Cm"]
-        cm2 = passive_info["fit_for_next_step"]["Cm"]
-
-    return ra, cm1, cm2, passive_info
-
-
-def _process_passive_fit_output(output):
-    """String-process to get input from subprocess NEURON passive fit runs"""
-    lines = output.decode('utf-8').split("\n")
-    data = {}
-    for i, k in enumerate(["A1", "A2", "Ri", "Cm", "Rm", "err"]):
-        line_vals = re.split('\s+', lines[-7 + i].strip())
-        data[k] = float(line_vals[-1])
-    return data
+    return paths, passive_info
 
 
 def cap_check_grand_averages(sweeps, data_set):
@@ -451,8 +378,9 @@ def main(input_file, output_file):
     with open(input_file, "r") as f:
         input = json.load(f)
 
-    nwb_path = input["nwb_path"]
-    swc_path = input["swc_path"]
+    nwb_path = input["paths"]["nwb"]
+    swc_path = input["paths"]["swc"]
+    storage_directory = input["paths"]["storage_directory"]
 
     data_set = NwbDataSet(nwb_path)
 
@@ -466,9 +394,10 @@ def main(input_file, output_file):
     if len(sweeps_to_fit) == 0:
         logger.info("No usable sweeps found")
         sys.exit()
-    ra, cm1, cm2, passive_info = passive_fitting(input["sweeps"]["cap_checks"],
-                                                 input["bridge_avg"],
-                                                 is_spiny, data_set, swc_path)
+    paths, passive_info = prepare_for_passive_fit(input["sweeps"]["cap_checks"],
+                                                  input["bridge_avg"],
+                                                  is_spiny, data_set,
+                                                  storage_directory)
 
     jxn = -14.0
 
@@ -487,7 +416,7 @@ def main(input_file, output_file):
 
     seeds = [1234, 1001, 4321, 1024, 2048]
 
-    jobs = [{"fit_type": fit_type, "seed": seed} for seed in seeds
+    tasks = [{"fit_type": fit_type, "seed": seed} for seed in seeds
             for fit_type in fit_types]
 
     swc_data = pd.read_table(swc_path, sep='\s+', comment='#', header=None)
@@ -503,39 +432,50 @@ def main(input_file, output_file):
     stim_dur = swp.end - swp.start
 
     v_baseline = [target["mean"] for target in targets if target["name"] == "v_baseline"][0]
-    output = {
-        "swc_path": swc_path,
-        "nwb_path": nwb_path,
+
+    results = {
         "is_spiny": is_spiny,
         "has_apical": has_apical,
         "sweeps_to_fit": sweeps_to_fit.tolist(),
         "junction_potential": jxn,
         "max_stim_test_na": max_i,
-        "passive": {
-            "ra": ra,
-            "cm": { "soma": cm1, "axon": cm1, "dend": cm2 },
-            "e_pas": v_baseline,
-            "info": passive_info,
-        },
+        "v_baseline": v_baseline,
         "stimulus": {
             "amplitude": 1e-3 * stim_amp,
             "delay": 1e3,
             "duration": 1e3 * stim_dur,
         },
-        "job_list": jobs,
         "target_features": targets,
         "sweeps": input["sweeps"],
     }
 
-    if has_apical:
-        output["passive"]["cm"]["apic"] = cm2
+    preprocess_results_path = os.path.join(storage_directory, "preprocess_results.json")
+    with open(preprocess_results_path, "w") as f:
+        json.dump(results, f, indent=2)
+
+    passive_info_path = os.path.join(storage_directory, "passive_info.json")
+    with open(passive_info_path, "w") as f:
+        json.dump(passive_info, f, indent=2)
+
+    paths.update({
+        "swc": swc_path,
+        "nwb": nwb_path,
+        "storage_directory": storage_directory,
+        "preprocess_results": preprocess_results_path,
+        "passive_info": passive_info_path,
+    })
+
+    output = {
+        "paths": paths,
+        "task_list": tasks,
+    }
 
     with open(output_file, "w") as f:
         json.dump(output, f, indent=2)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Pre-process and perform passive fit in workflow engine')
+    parser = argparse.ArgumentParser(description='Pre-process and prepare for passive fits')
     parser.add_argument('input', type=str)
     parser.add_argument('output', type=str)
 

@@ -4,7 +4,8 @@ import lims_utils
 from neuron import h
 import numpy as np
 import argparse
-import pkg_resources
+import json
+import os.path
 
 
 def load_morphology(filename):
@@ -14,20 +15,16 @@ def load_morphology(filename):
     h("objref this")
     imprt.instantiate(h.this)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='analyze cap check sweep')
-    parser.add_argument('upfile', type=str)
-    parser.add_argument('downfile', type=str)
-    parser.add_argument('limit', type=float)
-    parser.add_argument("bridge", type=float)
-    parser.add_argument("elec_cap", type=float)
-    parser.add_argument("swc", type=str)
 
-    args = parser.parse_args()
+def main(input_file, output_file):
+    with open(input_file, "r") as f:
+        input = json.load(f)
 
-    swc_path = args.swc
-    up_data = np.loadtxt(args.upfile)
-    down_data = np.loadtxt(args.downfile)
+    swc_path = input["paths"]["swc"].encode('ascii', 'ignore')
+    up_data = np.loadtxt(input["paths"]["up"])
+    down_data = np.loadtxt(input["paths"]["down"])
+    with open(input["paths"]["passive_info"], "r") as f:
+        info = json.load(f)
 
     h.load_file("stdgui.hoc")
     h.load_file("import3d.hoc")
@@ -48,16 +45,8 @@ if __name__ == "__main__":
         for seg in sec:
             seg.pas.e = 0
 
-    load_file_list = [
-        "passive/fixnseg.hoc",
-        "passive/circuit.ses",
-        "passive/params.hoc",
-        "passive/mrf3.ses",
-    ]
-
-    for filename in load_file_list:
-        file_path = pkg_resources.resource_filename(__name__, filename)
-        h.load_file(file_path)
+    for file_path in input["paths"]["fit3"]:
+        h.load_file(file_path.encode("ascii", "ignore"))
 
     h.v_init = 0
     h.tstop = 100
@@ -66,9 +55,9 @@ if __name__ == "__main__":
     fit_start = 4.0025
 
     circuit = h.LinearCircuit[0]
-    circuit.R2 = args.bridge / 2.0
-    circuit.R3 = args.bridge / 2.0
-    circuit.C4 = args.elec_cap * 1e-3
+    circuit.R2 = info["bridge"] / 2.0
+    circuit.R3 = info["bridge"] / 2.0
+    circuit.C4 = info["electrode_cap"] * 1e-3
 
     v_rec = h.Vector()
     t_rec = h.Vector()
@@ -84,7 +73,7 @@ if __name__ == "__main__":
     up_v = h.Vector(up_data[:, 1])
     fit0.set_data(up_t, up_v)
     fit0.boundary.x[0] = fit_start
-    fit0.boundary.x[1] = args.limit
+    fit0.boundary.x[1] = info["limit"]
     fit0.set_w()
 
     gen1 = mrf.p.pf.generatorlist.object(1)
@@ -95,7 +84,7 @@ if __name__ == "__main__":
     down_v = h.Vector(down_data[:, 1])
     fit1.set_data(down_t, down_v)
     fit1.boundary.x[0] = fit_start
-    fit1.boundary.x[1] = args.limit
+    fit1.boundary.x[1] = info["limit"]
     fit1.set_w()
 
     minerr = 1e12
@@ -114,8 +103,27 @@ if __name__ == "__main__":
             fit_Rm = h.Rm
             minerr = mrf.opt.minerr
 
-    h.region_areas()
-    print "Ri ", fit_Ri
-    print "Cm ", fit_Cm
-    print "Rm ", fit_Rm
-    print "Final error ", minerr
+    storage_directory = input["paths"]["storage_directory"]
+    results = {
+        "ra": fit_Ri,
+        "cm": fit_Cm,
+        "rm": fit_Rm,
+        "err": minerr,
+        "a1": h.somaaxon_area(),
+        "a2": h.alldend_area(),
+    }
+    results_file = os.path.join(storage_directory, "passive_fit_3_results.json")
+    with open(results_file, "w") as f:
+        json.dump(results, f, indent=2)
+
+    with open(output_file, "w") as f:
+        json.dump({"paths": {"passive_fit3": results_file}}, f, indent=2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='analyze cap check sweep')
+    parser.add_argument('input', type=str)
+    parser.add_argument('output', type=str)
+    args = parser.parse_args()
+
+    main(args.input, args.output)

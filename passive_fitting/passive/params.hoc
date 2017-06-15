@@ -17,7 +17,7 @@ proc init() {
 	frecord_init()
 }
 
-proc region_areas() { local _sum
+func somaaxon_area() { local _sum
 	_sum = 0
 
 	forsec "soma" for(x) {
@@ -28,8 +28,10 @@ proc region_areas() { local _sum
 		_sum += area(x)
 	}
 
-	print "A1 ", _sum
+	return _sum
+}
 
+func alldend_area() { local _sum
 	_sum = 0
 
 	forsec "dend" for(x) {
@@ -40,5 +42,5 @@ proc region_areas() { local _sum
 		_sum += area(x)
 	}
 
-	print "A2 ", _sum
+	return _sum
 }
