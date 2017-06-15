@@ -34,15 +34,13 @@
     { "parameter": "g_pas", "section": "dend", "mechanism": "", "min": 1e-7, "max": 1e-3 },
     { "parameter": "g_pas", "section": "apic", "mechanism": "", "min": 1e-7, "max": 1e-3 }
   ],
-  "conditions": [{
+  "conditions": {
     "celsius": 34.0,
-    "erev": [
-      {
+    "erev": {
         "ena": 53.0,
         "section": "soma",
         "ek": -107.0
-      }
-    ],
+      },
     "v_init": -80
-  }]
+  }
 }
