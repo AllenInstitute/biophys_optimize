@@ -97,7 +97,6 @@ def main(input_file, output_file):
             fit_Rm = h.Rm
             minerr = mrf.opt.minerr
 
-
     storage_directory = input["paths"]["storage_directory"]
     results = {
         "ra": fit_Ri,
