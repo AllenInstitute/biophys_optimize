@@ -125,11 +125,11 @@
   ],
   "conditions": {
     "celsius": 34.0,
-    "erev": {
+    "erev": [{
         "ena": 53.0,
         "section": "soma",
         "ek": -107.0
-      },
+      }],
     "v_init": -80
   }
 }
