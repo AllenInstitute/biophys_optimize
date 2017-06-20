@@ -1,0 +1,218 @@
+#!/usr/bin/env python
+
+import argparse
+import json
+import os.path
+import numpy as np
+import pandas as pd
+from pandas import DataFrame, Series
+
+from allensdk.core.nwb_data_set import NwbDataSet
+from utils import Utils
+import sweep_functions as sf
+
+
+def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
+                 noise_2_sweeps, max_attempts=20):
+    """Choose model with best error that does not exhibit depolarization block
+    on noise sweeps
+    """
+
+    errs = np.array([d["err"] for d in fit_results])
+    sorted_order = np.argsort(errs)
+    if len(noise_1_sweeps) == 0 and len(noise_2_sweeps) == 0:
+        print "No noise stimulus available to test - selecting the model with lowest error"
+        return fit_results[sorted_order[0]]
+
+    nwb_path = path_info["nwb"]
+    swc_path = path_info["swc"]
+
+    fit_style_data = {}
+    for fit_type in path_info["fit_styles"]:
+        with open(path_info["fit_styles"][fit_type], "r") as f:
+            fit_style_data[fit_type] = json.load(f)
+
+    data_set = NwbDataSet(nwb_path)
+    noise_stim = []
+    max_t = 0
+    dt = 0
+    if len(noise_1_sweeps) > 0:
+        v, i, t = sf.get_sweep_v_i_t_from_set(data_set, noise_1_sweeps[-1])
+        i *= 1e-3 # to nA
+        noise_stim.append(i)
+        if np.max(t) > max_t:
+            max_t = np.max(t)
+        dt = t[1] - t[0]
+
+    if len(noise_2_sweeps) > 0:
+        v, i, t = sf.get_sweep_v_i_t_from_set(data_set, noise_2_sweeps[-1])
+        i *= 1e-3 # to nA
+        noise_stim.append(i)
+        if np.max(t) > max_t:
+            max_t = np.max(t)
+        dt = t[1] - t[0]
+    max_t *= 1e3 # to ms
+    dt *= 1e3 # to ms
+    print "Max t = ", max_t
+
+    # Set up
+    if max_attempts > len(sorted_order):
+        max_attempts = len(sorted_order)
+
+    for ind in sorted_order[:max_attempts]:
+        print "Testing model ", ind
+
+        fit = fit_results[ind]
+        depol_okay = True
+
+        utils = Utils(path_info["hoc_files"],
+                      path_info["compiled_mod_library"])
+        h = utils.h
+        utils.generate_morphology(swc_path)
+        utils.load_cell_parameters(passive,
+                                   fit_style_data[fit["fit_type"]]["conditions"],
+                                   fit_style_data[fit["fit_type"]]["channels"],
+                                   fit_style_data[fit["fit_type"]]["addl_params"])
+        utils.insert_iclamp()
+        utils.set_iclamp_params(0, 0, 1e12)
+
+        h.tstop = max_t
+        h.celsius = fit_style_data[fit["fit_type"]]["conditions"]["celsius"]
+        h.v_init = v_init
+        h.dt = dt
+        h.cvode.atolscale("cai", 1e-4)
+        h.cvode.maxstep(10)
+        v_vec, i_vec, t_vec = utils.record_values()
+
+        for i in noise_stim:
+            i_stim_vec = h.Vector(i)
+            i_stim_vec.play(utils.stim._ref_amp, dt)
+            utils.set_actual_parameters(fit["params"])
+            print "Starting run"
+            h.finitialize()
+            h.run()
+            print "Finished run"
+            i_stim_vec.play_remove()
+            if has_noise_block(v_vec.as_numpy(), t_vec.as_numpy()):
+                depol_okay = False
+
+        if depol_okay:
+            print "Did not detect depolarization block on noise traces"
+            return fit
+
+    print "Failed to find model after looking at best {:d} organisms".format(max_attempts)
+    return None
+
+
+def save_fit_json(genome_vals, passive, preprocess, fit_style_info, fit_file):
+    json_data = {}
+
+    # passive
+    json_data["passive"] = [{}]
+    json_data["passive"][0]["ra"] = passive["ra"]
+    json_data["passive"][0]["e_pas"] = passive["e_pas"]
+    json_data["passive"][0]["cm"] = []
+    for k in passive["cm"]:
+        json_data["passive"][0]["cm"].append({"section": k, "cm": passive["cm"][k]})
+
+    # fitting
+    json_data["fitting"] = [{}]
+    json_data["fitting"][0]["sweeps"] = preprocess["sweeps_to_fit"]
+    json_data["fitting"][0]["junction_potential"] = preprocess["junction_potential"]
+
+    # conditions
+    json_data["conditions"] = [fit_style_info["conditions"]]
+    json_data["conditions"][0]["v_init"] = passive["e_pas"]
+
+    # genome
+    all_params = fit_style_info["channels"] + fit_style_info["addl_params"]
+    json_data["genome"] = []
+    for i, p in enumerate(all_params):
+        if len(p["mechanism"]) > 0:
+            param_name = p["parameter"] + "_" + p["mechanism"]
+        else:
+            param_name = p["parameter"]
+        json_data["genome"].append({"value": genome_vals[i],
+                                    "section": p["section"],
+                                    "name": param_name,
+                                    "mechanism": p["mechanism"]
+                                    })
+
+    with open(fit_file, "w") as f:
+        json.dump(json_data, f, indent=2)
+
+
+def has_noise_block(v, t, depol_block_threshold=-50.0, block_min_duration = 50.0):
+    stim_start_idx = 0
+    stim_end_idx = len(t) - 1
+    bool_v = np.array(v > depol_block_threshold, dtype=int)
+    up_indexes = np.flatnonzero(np.diff(bool_v) == 1)
+    down_indexes = np.flatnonzero(np.diff(bool_v) == -1)
+    if len(up_indexes) > len(down_indexes):
+        down_indexes = np.append(down_indexes, [stim_end_idx])
+
+    if len(up_indexes) != 0:
+        max_depol_duration = np.max([t[down_indexes[k]] - t[up_idx] for k, up_idx in enumerate(up_indexes)])
+        if max_depol_duration > block_min_duration:
+            print "Encountered depolarization block"
+            return True
+
+    return False
+
+
+def fit_info(fits):
+    info = []
+    for fit in fits:
+        fit_type = fit["fit_type"]
+        hof_fit = np.loadtxt(fit["hof_fit"])
+        hof = np.loadtxt(fit["hof"])
+        for i in range(len(hof_fit)):
+            info.append({
+                "fit_type": fit_type,
+                "err": hof_fit[i],
+                "params": hof[i, :],
+            })
+    return info
+
+
+def main(input_file, output_file):
+    with open(input_file, "r") as f:
+        input = json.load(f)
+
+    swc_path = input["paths"]["swc"]
+    fit_style_paths = input["paths"]["fit_styles"]
+    with open(input["paths"]["passive_results"], "r") as f:
+        passive = json.load(f)
+    with open(input["paths"]["preprocess_results"], "r") as f:
+        preprocess = json.load(f)
+
+    fits = input["paths"]["fits"]
+    fit_results = fit_info(fits)
+    best_fit = select_model(fit_results, input["paths"], passive, preprocess["v_baseline"],
+                            input["noise_1_sweeps"], input["noise_2_sweeps"])
+    if best_fit is None:
+        print "Failed to find acceptable optimized model"
+        return
+
+    fit_json_path = os.path.join(input["paths"]["storage_directory"], "best_fit.json")
+    with open(input["paths"]["fit_styles"][best_fit["fit_type"]], "r") as f:
+        fit_style_data = json.load(f)
+    save_fit_json(best_fit["params"], passive, preprocess, fit_style_data, fit_json_path)
+
+    output = {
+        "paths": {
+            "fit_json": fit_json_path,
+        }
+    }
+
+    with open(output_file, "w") as f:
+        json.dump(output, f, indent=2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Select final model from optimization runs')
+    parser.add_argument('input', type=str)
+    parser.add_argument('output', type=str)
+    args = parser.parse_args()
+
+    main(args.input, args.output)
