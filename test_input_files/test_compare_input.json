@@ -1,0 +1,12 @@
+{
+  "fit_types": ["f6"],
+  "paths": {
+    "f6": [
+      {
+        "seed": 1234,
+        "hof": "test_storage/f6_1234_final_hof.txt",
+        "hof_fit": "test_storage/f6_1234_final_hof_fit.txt"
+      }
+    ]
+  }
+}

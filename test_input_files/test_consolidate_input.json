@@ -1,0 +1,10 @@
+{
+  "paths": {
+    "storage_directory": "test_storage",
+    "preprocess_results": "test_storage/preprocess_results.json",
+    "passive_fit1": "test_storage/passive_fit_1_results.json",
+    "passive_fit2": "test_storage/passive_fit_2_results.json",
+    "passive_fit3": "test_storage/passive_fit_3_results.json",
+    "passive_info": "test_storage/passive_info.json"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "paths": {
+    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc",
+    "storage_directory": "test_storage",
+    "preprocess_results": "test_storage/preprocess_results.json",
+    "passive_results": "test_storage/passive_results.json",
+    "fit_style": "fit_styles/f6_fit_style.json",
+    "compiled_mod_library": "compiled/x86_64/.libs/libnrnmech.so",
+    "hoc_files": [ "stdgui.hoc", "import3d.hoc", "cell.hoc" ]
+  },
+  "fit_type": "f6",
+  "seed": 1234,
+  "mu": 10,
+  "ngen": 5
+}

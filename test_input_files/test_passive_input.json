@@ -1,0 +1,71 @@
+{
+  "paths": {
+    "passive_info": "./test_storage/passive_info.json", 
+    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc", 
+    "up": "./test_storage/upbase.dat", 
+    "down": "./test_storage/downbase.dat", 
+    "storage_directory": "./test_storage", 
+    "preprocess_results": "./test_storage/preprocess_results.json", 
+    "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb", 
+    "fit3": [
+      "./passive_fitting/passive/fixnseg.hoc", 
+      "./passive_fitting/passive/circuit.ses", 
+      "./passive_fitting/passive/params.hoc", 
+      "./passive_fitting/passive/mrf3.ses"
+    ], 
+    "fit2": [
+      "./passive_fitting/passive/fixnseg.hoc", 
+      "./passive_fitting/passive/iclamp.ses", 
+      "./passive_fitting/passive/params.hoc", 
+      "./passive_fitting/passive/mrf2.ses"
+    ], 
+    "fit1": [
+      "./passive_fitting/passive/fixnseg.hoc", 
+      "./passive_fitting/passive/iclamp.ses", 
+      "./passive_fitting/passive/params.hoc", 
+      "./passive_fitting/passive/mrf.ses"
+    ]
+  }, 
+  "task_list": [
+    {
+      "fit_type": "f6", 
+      "seed": 1234
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 1234
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 1001
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 1001
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 4321
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 4321
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 1024
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 1024
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 2048
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 2048
+    }
+  ]
+}

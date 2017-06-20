@@ -1,0 +1,69 @@
+{
+  "paths": {
+    "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb",
+    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc",
+    "storage_directory": "./test_storage",
+    "fit_styles": {
+      "f9": "fit_styles/f9_fit_style.json",
+      "f13": "fit_styles/f13_fit_style.json"
+    },
+    "passive_results": "test_storage/passive_results.json",
+    "preprocess_results": "test_storage/preprocess_results.json",
+    "fits": [
+      {
+        "fit_type": "f9",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s1234/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s1234/final_hof.txt"
+      },
+      {
+        "fit_type": "f9",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s1001/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s1001/final_hof.txt"
+      },
+      {
+        "fit_type": "f9",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s4321/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s4321/final_hof.txt"
+      },
+      {
+        "fit_type": "f9",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s1024/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s1024/final_hof.txt"
+      },
+      {
+        "fit_type": "f9",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s2048/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f9/s2048/final_hof.txt"
+      },
+      {
+        "fit_type": "f13",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s1234/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s1234/final_hof.txt"
+      },
+      {
+        "fit_type": "f13",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s1001/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s1001/final_hof.txt"
+      },
+      {
+        "fit_type": "f13",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s4321/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s4321/final_hof.txt"
+      },
+      {
+        "fit_type": "f13",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s1024/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s1024/final_hof.txt"
+      },
+      {
+        "fit_type": "f13",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s2048/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f13/s2048/final_hof.txt"
+      }
+    ],
+    "compiled_mod_library": "compiled/x86_64/.libs/libnrnmech.so",
+    "hoc_files": [ "stdgui.hoc", "import3d.hoc", "cell.hoc" ]
+  },
+  "noise_1_sweeps": [57],
+  "noise_2_sweeps": [58, 52]
+}

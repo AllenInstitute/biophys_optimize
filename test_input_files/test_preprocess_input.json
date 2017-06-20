@@ -1,0 +1,16 @@
+{
+  "paths": {
+    "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb",
+    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc",
+    "storage_directory": "./test_storage"
+  },
+  "dendrite_type_tag": "dendrite type - spiny",
+	"sweeps": {
+		"core_1_long_squares": [27, 30, 32, 37, 38, 36, 35, 34, 33, 29, 28, 26, 46, 45, 44, 43, 42, 41, 40],
+		"core_2_long_squares": [67, 66, 65, 63],
+		"seed_1_noise": [57],
+		"seed_2_noise": [58, 52],
+		"cap_checks": [60, 61]
+	},
+	"bridge_avg": 12.9426126480103
+}
