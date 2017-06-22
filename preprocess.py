@@ -3,17 +3,15 @@
 import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
-import argparse
 import subprocess
 import re
-import json
 import os
 import sys
 import logging
 import pkg_resources
 from collections import Counter
 
-from allensdk.core.nwb_data_set import NwbDataSet
+from allensdk.config.manifest import Manifest
 
 import check_fi_shift
 import sweep_functions as sf
@@ -137,6 +135,7 @@ def target_features(ext):
         swp.process_new_spike_feature("slow_trough_delta_v",
                                       sf.slow_trough_delta_voltage_feature,
                                       affected_by_clipping=True)
+        
 
     sweep_keys = swp.sweep_feature_keys()
     spike_keys = swp.spike_feature_keys()
@@ -266,6 +265,7 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
     grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
 
     # Save to local storage to be loaded by NEURON fitting scripts
+    Manifest.safe_mkdir(storage_directory)
     upfile = os.path.join(storage_directory, "upbase.dat")
     downfile = os.path.join(storage_directory, "downbase.dat")
     with open(upfile, 'w') as f:
@@ -296,7 +296,7 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
         "limit": escape_t,
         "electrode_cap": 1.0,
         "is_spiny": is_spiny,
-    }
+    } 
 
     return paths, passive_info
 
@@ -372,30 +372,20 @@ def max_i_for_depol_block_check(sweeps_input, data_set):
     max_i *= 1e-3 # convert to nA
     return max_i
 
-
-def main(input_file, output_file):
-    """Main sequence of pre-processing and passive fitting"""
-    with open(input_file, "r") as f:
-        input = json.load(f)
-
-    nwb_path = input["paths"]["nwb"]
-    swc_path = input["paths"]["swc"]
-    storage_directory = input["paths"]["storage_directory"]
-
-    data_set = NwbDataSet(nwb_path)
-
-    dendrite_type_tag = input["dendrite_type_tag"]
+def preprocess(data_set, swc_data, dendrite_type_tag,
+               sweeps, bridge_avg, storage_directory):
     is_spiny = True
     if dendrite_type_tag == "dendrite type - aspiny":
         is_spiny = False
 
     # Check for fi curve shift to decide to use core1 or core2
-    sweeps_to_fit, start, end = select_sweeps(input["sweeps"], data_set)
+    sweeps_to_fit, start, end = select_sweeps(sweeps, data_set)
     if len(sweeps_to_fit) == 0:
         logger.info("No usable sweeps found")
         sys.exit()
-    paths, passive_info = prepare_for_passive_fit(input["sweeps"]["cap_checks"],
-                                                  input["bridge_avg"],
+
+    paths, passive_info = prepare_for_passive_fit(sweeps["cap_checks"],
+                                                  bridge_avg,
                                                   is_spiny, data_set,
                                                   storage_directory)
 
@@ -403,7 +393,7 @@ def main(input_file, output_file):
 
     ext = sf.sweep_set_extractor_from_list(sweeps_to_fit, data_set, start, end, jxn=jxn)
     targets = target_features(ext)
-    max_i = max_i_for_depol_block_check(input["sweeps"], data_set)
+    max_i = max_i_for_depol_block_check(sweeps, data_set)
 
     # Decide which fit(s) we are doing
     width = [target["mean"] for target in targets if target["name"] == "width"][0]
@@ -419,7 +409,6 @@ def main(input_file, output_file):
     tasks = [{"fit_type": fit_type, "seed": seed} for seed in seeds
             for fit_type in fit_types]
 
-    swc_data = pd.read_table(swc_path, sep='\s+', comment='#', header=None)
     has_apical = False
     if 4 in pd.unique(swc_data[1]):
         has_apical = True
@@ -433,7 +422,7 @@ def main(input_file, output_file):
 
     v_baseline = [target["mean"] for target in targets if target["name"] == "v_baseline"][0]
 
-    results = {
+    return paths, {
         "is_spiny": is_spiny,
         "has_apical": has_apical,
         "sweeps_to_fit": sweeps_to_fit.tolist(),
@@ -446,39 +435,6 @@ def main(input_file, output_file):
             "duration": 1e3 * stim_dur,
         },
         "target_features": targets,
-        "sweeps": input["sweeps"],
+        "sweeps": sweeps,
     }
-
-    preprocess_results_path = os.path.join(storage_directory, "preprocess_results.json")
-    with open(preprocess_results_path, "w") as f:
-        json.dump(results, f, indent=2)
-
-    passive_info_path = os.path.join(storage_directory, "passive_info.json")
-    with open(passive_info_path, "w") as f:
-        json.dump(passive_info, f, indent=2)
-
-    paths.update({
-        "swc": swc_path,
-        "nwb": nwb_path,
-        "storage_directory": storage_directory,
-        "preprocess_results": preprocess_results_path,
-        "passive_info": passive_info_path,
-    })
-
-    output = {
-        "paths": paths,
-        "task_list": tasks,
-    }
-
-    with open(output_file, "w") as f:
-        json.dump(output, f, indent=2)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Pre-process and prepare for passive fits')
-    parser.add_argument('input', type=str)
-    parser.add_argument('output', type=str)
-
-    args = parser.parse_args()
-
-    main(args.input, args.output)
+    

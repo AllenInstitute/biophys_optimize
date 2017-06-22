@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import psycopg2
 import numpy as np
 from collections import Counter
 import argparse
