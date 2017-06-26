@@ -25,13 +25,13 @@ def main():
 
     if passive_fit_type == PASSIVE_FIT_1:
         pf.initialize_neuron(swc_path, input["paths"]["fit1"])
-        results = pf.passive_fit_1(info)
+        results = pf.passive_fit_1(info, up_data, down_data)
     elif passive_fit_type == PASSIVE_FIT_2:
         pf.initialize_neuron(swc_path, input["paths"]["fit2"])
-        results = pf.passive_fit_2(info)
+        results = pf.passive_fit_2(info, up_data, down_data)
     elif passive_fit_type == PASSIVE_FIT_ELEC:
         pf.initialize_neuron(swc_path, input["paths"]["fit3"])
-        results = pf.passive_fit_elec(info)
+        results = pf.passive_fit_elec(info, up_data, down_data)
     else:
         raise Exception("unknown passive fit type: %s" % passive_fit_type)
 

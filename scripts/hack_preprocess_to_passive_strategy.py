@@ -13,24 +13,24 @@ parser.add_argument('passive_fit_type', type=str)
 args = parser.parse_args()
 
 fit1_handles = [
-    "passive_fitting/passive/fixnseg.hoc",
-    "passive_fitting/passive/iclamp.ses",
-    "passive_fitting/passive/params.hoc",
-    "passive_fitting/passive/mrf.ses",
+    "passive/fixnseg.hoc",
+    "passive/iclamp.ses",
+    "passive/params.hoc",
+    "passive/mrf.ses",
 ]
 
 fit2_handles = [
-    "passive_fitting/passive/fixnseg.hoc",
-    "passive_fitting/passive/iclamp.ses",
-    "passive_fitting/passive/params.hoc",
-    "passive_fitting/passive/mrf2.ses",
+    "passive/fixnseg.hoc",
+    "passive/iclamp.ses",
+    "passive/params.hoc",
+    "passive/mrf2.ses",
 ]
 
 fit3_handles = [
-    "passive_fitting/passive/fixnseg.hoc",
-    "passive_fitting/passive/circuit.ses",
-    "passive_fitting/passive/params.hoc",
-    "passive_fitting/passive/mrf3.ses",
+    "passive/fixnseg.hoc",
+    "passive/circuit.ses",
+    "passive/params.hoc",
+    "passive/mrf3.ses",
 ]
 
 with open(args.input, "r") as f:

@@ -1,41 +1,45 @@
 #!/usr/bin/env python
 
-import neuron as h
+from neuron import h
 import numpy as np
 import argparse
 import json
 import os.path
 
 def initialize_neuron(swc_path, file_paths):
+    h.load_file("stdgui.hoc")
+    h.load_file("import3d.hoc")
+
     swc = h.Import3d_SWC_read()
     swc.input(swc_path)
     imprt = h.Import3d_GUI(swc, 0)
     h("objref this")
     imprt.instantiate(h.this)
 
-    h.load_file("stdgui.hoc")
-    h.load_file("import3d.hoc")
+    print file_paths
 
     for sec in h.allsec():
         if sec.name().startswith("axon"):
             h.delete_section(sec=sec)
 
-        axon = h.Section()
-        axon.L = 60
-        axon.diam = 1
-        axon.connect(h.soma[0], 0.5, 0)
+    axon = h.Section()
+    axon.L = 60
+    axon.diam = 1
+    axon.connect(h.soma[0], 0.5, 0)
 
-        h.define_shape()
+    h.define_shape()
 
-        for sec in h.allsec():
-            sec.insert('pas')
-            for seg in sec:
-                seg.pas.e = 0
+    for sec in h.allsec():
+        sec.insert('pas')
+        for seg in sec:
+            seg.pas.e = 0
 
-        for file_path in file_paths:
-            h.load_file(file_path.encode("ascii", "ignore"))
+    for file_path in file_paths:
+        h.load_file(file_path.encode("ascii", "ignore"))
 
-def passive_fit_1(info):
+            
+
+def passive_fit_1(info, up_data, down_data):
     h.v_init = 0
     h.tstop = 100
     h.cvode_active(1)
@@ -97,7 +101,7 @@ def passive_fit_1(info):
 
     return results
 
-def passive_fit_2(info):
+def passive_fit_2(info, up_data, down_data):
     h.v_init = 0
     h.tstop = 100
     h.cvode_active(1)
@@ -157,7 +161,7 @@ def passive_fit_2(info):
 
     return results
 
-def passive_fit_elec(info):
+def passive_fit_elec(info, up_data, down_data):
     h.v_init = 0
     h.tstop = 100
     h.cvode_active(1)
