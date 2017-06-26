@@ -1,11 +1,7 @@
 import argparse
 import allensdk.core.json_utilities as ju
 import numpy as np
-import biophys_optimize.neuron_passive_fit as pf
-
-PASSIVE_FIT_1 = "passive_fit_1"
-PASSIVE_FIT_2 = "passive_fit_2"
-PASSIVE_FIT_ELEC = "passive_fit_elec"
+import biophys_optimize.neuron_passive_fit as npf
 
 def main():
     parser = argparse.ArgumentParser(description='analyze cap check sweep')
@@ -23,15 +19,14 @@ def main():
 
     info = ju.read(input["paths"]["passive_info"])
 
-    if passive_fit_type == PASSIVE_FIT_1:
-        pf.initialize_neuron(swc_path, input["paths"]["fit1"])
-        results = pf.passive_fit_1(info, up_data, down_data)
-    elif passive_fit_type == PASSIVE_FIT_2:
-        pf.initialize_neuron(swc_path, input["paths"]["fit2"])
-        results = pf.passive_fit_2(info, up_data, down_data)
-    elif passive_fit_type == PASSIVE_FIT_ELEC:
-        pf.initialize_neuron(swc_path, input["paths"]["fit3"])
-        results = pf.passive_fit_elec(info, up_data, down_data)
+    npf.initialize_neuron(swc_path, input["paths"]["fit"])
+
+    if passive_fit_type == npf.PASSIVE_FIT_1:
+        results = npf.passive_fit_1(info, up_data, down_data)        
+    elif passive_fit_type == npf.PASSIVE_FIT_2:
+        results = npf.passive_fit_2(info, up_data, down_data)
+    elif passive_fit_type == npf.PASSIVE_FIT_ELEC:
+        results = npf.passive_fit_elec(info, up_data, down_data)
     else:
         raise Exception("unknown passive fit type: %s" % passive_fit_type)
 

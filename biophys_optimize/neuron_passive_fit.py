@@ -6,6 +6,10 @@ import argparse
 import json
 import os.path
 
+PASSIVE_FIT_1 = "passive_fit_1"
+PASSIVE_FIT_2 = "passive_fit_2"
+PASSIVE_FIT_ELEC = "passive_fit_elec"
+
 def initialize_neuron(swc_path, file_paths):
     h.load_file("stdgui.hoc")
     h.load_file("import3d.hoc")

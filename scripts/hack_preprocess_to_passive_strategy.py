@@ -4,7 +4,7 @@ import json
 import argparse
 import os.path
 from pkg_resources import resource_filename
-
+import biophys_optimize.neuron_passive_fit as npf
 
 parser = argparse.ArgumentParser(description='hack in paths that strategy will do - passive')
 parser.add_argument('input', type=str)
@@ -33,6 +33,13 @@ fit3_handles = [
     "passive/mrf3.ses",
 ]
 
+if args.passive_fit_type == npf.PASSIVE_FIT_1:
+    fit_handles = fit1_handles
+elif args.passive_fit_type == npf.PASSIVE_FIT_2:
+    fit_handles = fit2_handles
+elif args.passive_fit_type == npf.PASSIVE_FIT_ELEC:
+    fit_handles = fit3_handles
+
 with open(args.input, "r") as f:
     data = json.load(f)
 
@@ -40,9 +47,7 @@ import biophys_optimize
 bo_name = biophys_optimize.__name__
 
 new_path_info = {
-    "fit1": [resource_filename(bo_name, f) for f in fit1_handles],
-    "fit2": [resource_filename(bo_name, f) for f in fit2_handles],
-    "fit3": [resource_filename(bo_name, f) for f in fit3_handles],
+    "fit": [resource_filename(bo_name, f) for f in fit_handles],
     "passive_fit_results_file": os.path.join(data["paths"]["storage_directory"], "%s_results.json" % args.passive_fit_type)
 }
 
