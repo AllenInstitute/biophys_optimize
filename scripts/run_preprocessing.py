@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import os
 
 from allensdk.core.nwb_data_set import NwbDataSet
 import allensdk.core.json_utilities as ju
@@ -18,21 +19,21 @@ def main():
 
     nwb_path = input["paths"]["nwb"]
     swc_path = input["paths"]["swc"]
+    storage_directory=input["paths"]["storage_directory"]
 
-    paths, results = preprocess(data_set=NwbDataSet(nwb_path),
-                                swc_data=pd.read_table(swc_path, sep='\s+', comment='#', header=None),
-                                dendrite_type_tag=input["dendrite_type_tag"],
-                                sweeps=input["sweeps"],
-                                bridge_avg=input["bridge_avg"],
-                                storage_directory=input["paths"]["storage_directory"])
+    paths, results, passive_info, tasks = \
+        preprocess(data_set=NwbDataSet(nwb_path),
+                   swc_data=pd.read_table(swc_path, sep='\s+', comment='#', header=None),
+                   dendrite_type_tag=input["dendrite_type_tag"],
+                   sweeps=input["sweeps"],
+                   bridge_avg=input["bridge_avg"],
+                   storage_directory=storage_directory)
 
     preprocess_results_path = os.path.join(storage_directory, "preprocess_results.json")
-    with open(preprocess_results_path, "w") as f:
-        json.dump(results, f, indent=2)
+    ju.write(preprocess_results_path, results)
 
     passive_info_path = os.path.join(storage_directory, "passive_info.json")
-    with open(passive_info_path, "w") as f:
-        json.dump(passive_info, f, indent=2)
+    ju.write(passive_info_path, passive_info)
 
     paths.update({
         "swc": swc_path,

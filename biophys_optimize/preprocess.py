@@ -436,5 +436,5 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
         },
         "target_features": targets,
         "sweeps": sweeps,
-    }
+    }, passive_info, tasks
     

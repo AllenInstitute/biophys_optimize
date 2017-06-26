@@ -3,7 +3,6 @@
 import numpy as np
 from allensdk.ephys.ephys_extractor import EphysSweepSetFeatureExtractor, _step_stim_amp
 
-
 C1LS_START = 1.02 # seconds
 C1LS_END = 2.02 # seconds
 C2LS_START = 1.02 # seconds
