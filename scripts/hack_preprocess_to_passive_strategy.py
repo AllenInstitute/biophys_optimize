@@ -36,13 +36,13 @@ fit3_handles = [
 with open(args.input, "r") as f:
     data = json.load(f)
 
-import biophys_optimize.passive_fitting
-bopf_name = biophys_optimize.passive_fitting.__name__
+import biophys_optimize
+bo_name = biophys_optimize.__name__
 
 new_path_info = {
-    "fit1": [resource_filename(bopf_name, f) for f in fit1_handles],
-    "fit2": [resource_filename(bopf_name, f) for f in fit2_handles],
-    "fit3": [resource_filename(bopf_name, f) for f in fit3_handles],
+    "fit1": [resource_filename(bo_name, f) for f in fit1_handles],
+    "fit2": [resource_filename(bo_name, f) for f in fit2_handles],
+    "fit3": [resource_filename(bo_name, f) for f in fit3_handles],
     "passive_fit_results_file": os.path.join(data["paths"]["storage_directory"], "%s_results.json" % args.passive_fit_type)
 }
 
