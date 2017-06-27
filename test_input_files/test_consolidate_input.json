@@ -1,10 +1,58 @@
 {
   "paths": {
-    "storage_directory": "test_storage",
-    "preprocess_results": "test_storage/preprocess_results.json",
-    "passive_fit1": "test_storage/passive_fit_1_results.json",
-    "passive_fit2": "test_storage/passive_fit_2_results.json",
-    "passive_fit3": "test_storage/passive_fit_3_results.json",
-    "passive_info": "test_storage/passive_info.json"
-  }
+    "passive_fit_2": "./test_storage/passive_fit_2_results.json", 
+    "passive_fit_1": "./test_storage/passive_fit_1_results.json", 
+    "consolidated_passive_info": "./test_storage/consolidated_passive_info.json", 
+    "passive_fit_elec": "./test_storage/passive_fit_elec_results.json", 
+    "passive_info": "./test_storage/passive_info.json", 
+    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc", 
+    "up": "./test_storage/upbase.dat", 
+    "down": "./test_storage/downbase.dat", 
+    "storage_directory": "./test_storage", 
+    "preprocess_results": "./test_storage/preprocess_results.json", 
+    "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb"
+  }, 
+  "should_run": true, 
+  "task_list": [
+    {
+      "fit_type": "f6", 
+      "seed": 1234
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 1234
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 1001
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 1001
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 4321
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 4321
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 1024
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 1024
+    }, 
+    {
+      "fit_type": "f6", 
+      "seed": 2048
+    }, 
+    {
+      "fit_type": "f12", 
+      "seed": 2048
+    }
+  ]
 }
