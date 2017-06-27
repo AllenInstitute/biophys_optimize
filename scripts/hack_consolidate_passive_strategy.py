@@ -18,13 +18,18 @@ fit_1 = ju.read(args.fit_1_out)
 fit_2 = ju.read(args.fit_2_out)
 fit_3 = ju.read(args.fit_elec_out)
 
-data["paths"].update({ 
+out_data = {
+    "paths": {
+        "passive_info": data["paths"]["passive_info"],
+        "preprocess_results": data["paths"]["preprocess_results"],
         "passive_fit_1": fit_1["paths"][npf.PASSIVE_FIT_1],
         "passive_fit_2": fit_2["paths"][npf.PASSIVE_FIT_2],
         "passive_fit_elec": fit_3["paths"][npf.PASSIVE_FIT_ELEC],
-        "consolidated_passive_info": os.path.join(data["paths"]["storage_directory"], "consolidated_passive_info.json")})
+        "passive_results": os.path.join(data["paths"]["storage_directory"], "passive_results.json")
+        }
+}
 
-ju.write(args.output, data)
+ju.write(args.output, out_data)
 
 
 

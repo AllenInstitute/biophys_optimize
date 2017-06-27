@@ -3,7 +3,7 @@ import allensdk.core.json_utilities as ju
 
 import biophys_optimize.model_selection as ms
 
-def main(input_file, output_file):
+def main():
     parser = argparse.ArgumentParser(description='Select final model from optimization runs')
     parser.add_argument('input_json', type=str)
     parser.add_argument('output_json', type=str)
