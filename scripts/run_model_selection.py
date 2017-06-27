@@ -28,11 +28,11 @@ def main():
     fit_style_data = ju.read(input["paths"]["fit_styles"][best_fit["fit_type"]])
     fit_data = ms.build_fit_data(best_fit["params"], passive, preprocess, fit_style_data)
     
-    ju.write(fit_json_path, fit_data)
+    ju.write(best_fit_json_path, fit_data)
 
     output = {
         "paths": {
-            "fit_json": fit_json_path,
+            "fit_json": best_fit_json_path,
         }
     }
 
