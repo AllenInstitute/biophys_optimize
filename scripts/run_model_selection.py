@@ -17,7 +17,7 @@ def main():
     preprocess = ju.read(input["paths"]["preprocess_results"])
 
     fits = input["paths"]["fits"]
-    fit_results = fit_info(fits)
+    fit_results = ms.fit_info(fits)
     best_fit = ms.select_model(fit_results, input["paths"], passive, preprocess["v_baseline"],
                                input["noise_1_sweeps"], input["noise_2_sweeps"])
     if best_fit is None:
