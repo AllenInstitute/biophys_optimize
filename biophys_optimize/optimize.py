@@ -129,6 +129,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
             print "Will check for blocks"
             do_block_check = True
 
+    print compiled_mod_library
 
     utils = Utils(hoc_files,
                   compiled_mod_library)

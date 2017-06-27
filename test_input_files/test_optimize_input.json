@@ -6,7 +6,7 @@
       "import3d.hoc", 
       "/local1/stash/biophys_optimize/biophys_optimize/cell.hoc"
     ], 
-    "compiled_mod_library": "/local1/stash/biophys_optimize/biophys_optimize/compiled/x86_64/.libs/libnrnmech.so", 
+    "compiled_mod_library": "/local1/stash/biophys_optimize/biophys_optimize/x86_64/.libs/libnrnmech.so", 
     "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc", 
     "storage_directory": "./test_storage", 
     "preprocess_results": "./test_storage/preprocess_results.json", 
