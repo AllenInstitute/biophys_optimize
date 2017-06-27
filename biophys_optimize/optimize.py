@@ -108,42 +108,34 @@ def initPopulation(pcls, ind_init, popfile):
     return pcls(ind_init(utils.normalize_actual_parameters(line)) for line in popdata.tolist())
 
 
-def main(input_file, output_file):
+def optimize(hoc_files, compiled_mod_library, morphology_path, 
+             preprocess_results, passive_results, 
+             fit_type, fit_style_data,
+             ngen, seed, mu,
+             storage_directory,
+             starting_population=None):
     global stim_params, do_block_check, max_stim_amp, utils, h
     global v_vec, i_vec, t_vec, features, targets
 
-    with open(input_file, "r") as f:
-        input = json.load(f)
-
-    with open(input["paths"]["preprocess_results"], "r") as f:
-        preprocess = json.load(f)
-    targets = preprocess["target_features"]
-
-    with open(input["paths"]["passive_results"], "r") as f:
-        passive = json.load(f)
-
-    with open(input["paths"]["fit_style"], "r") as f:
-        fit_style_data = json.load(f)
     features = fit_style_data["features"]
+    targets = preprocess_results["target_features"]
+    stim_params = preprocess_results["stimulus"]
 
-    stim_params = preprocess["stimulus"]
-    fit_type = input["fit_type"]
     block_check_fit_types = ["f9", "f13"]
     do_block_check = False
     if fit_type in block_check_fit_types:
-        max_stim_amp = preprocess["max_stim_test_na"]
+        max_stim_amp = preprocess_results["max_stim_test_na"]
         if max_stim_amp > stim_params["amplitude"]:
             print "Will check for blocks"
             do_block_check = True
 
 
-    utils = Utils(input["paths"]["hoc_files"],
-                  input["paths"]["compiled_mod_library"])
+    utils = Utils(hoc_files,
+                  compiled_mod_library)
     h = utils.h
 
-    morphology_path = input["paths"]["swc"]
     utils.generate_morphology(morphology_path)
-    utils.load_cell_parameters(passive,
+    utils.load_cell_parameters(passive_results,
                                fit_style_data["conditions"],
                                fit_style_data["channels"],
                                fit_style_data["addl_params"])
@@ -153,15 +145,13 @@ def main(input_file, output_file):
 
     h.tstop = stim_params["delay"] * 2.0 + stim_params["duration"]
     h.celsius = fit_style_data["conditions"]["celsius"]
-    h.v_init = preprocess["v_baseline"]
+    h.v_init = preprocess_results["v_baseline"]
     h.cvode_active(1)
     h.cvode.atolscale("cai", 1e-4)
     h.cvode.maxstep(10)
 
     v_vec, i_vec, t_vec = utils.record_values()
 
-    seed, ngen, mu = input["seed"], input["ngen"], input["mu"]
-    storage_directory = input["paths"]["storage_directory"]
     try:
         neuron_parallel.runworker()
 
@@ -200,11 +190,10 @@ def main(input_file, output_file):
         logbook = tools.Logbook()
         logbook.header = "gen", "nevals", "min", "max", "best"
 
-        if "starting_population" in input["paths"]:
+        if starting_population is not None:
             print "Using a pre-defined starting population"
-            start_pop_path = input["paths"]["starting_population"]
             toolbox.register("population_start", initPopulation, list, creator.Individual)
-            pop = toolbox.population_start(start_pop_path)
+            pop = toolbox.population_start(starting_population)
         else:
             pop = toolbox.population(n=mu)
 
@@ -274,20 +263,14 @@ def main(input_file, output_file):
             }
         }
 
-        with open(output_file, "w") as f:
-            json.dump(output, f, indent=2)
 
         neuron_parallel.done()
         h.quit()
+
+        return output
     except RuntimeError:
         print "Exception encountered during parallel NEURON execution"
         MPI.COMM_WORLD.Abort()
+        
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Start a DEAP optimization run.')
-    parser.add_argument('input', type=str)
-    parser.add_argument('output', type=str)
-    args = parser.parse_args()
-
-    main(args.input, args.output)
