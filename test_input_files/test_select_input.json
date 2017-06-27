@@ -2,13 +2,13 @@
   "paths": {
     "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb",
     "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc",
-    "storage_directory": "./test_storage",
     "fit_styles": {
       "f9": "/local1/stash/biophys_optimize/biophys_optimize/fit_styles/f9_fit_style.json",
       "f13": "/local1/stash/biophys_optimize/biophys_optimize/fit_styles/f13_fit_style.json"
     },
     "passive_results": "test_storage/passive_results.json",
     "preprocess_results": "test_storage/preprocess_results.json",
+    "best_fit_json_path": "test_storage/best_fit.json",
     "fits": [
       {
         "fit_type": "f9",

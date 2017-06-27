@@ -13,8 +13,10 @@ def main():
 
     swc_path = input["paths"]["swc"]
     fit_style_paths = input["paths"]["fit_styles"]
+    best_fit_json_path = input["paths"]["best_fit_json_path"] 
     passive = ju.read(input["paths"]["passive_results"])
     preprocess = ju.read(input["paths"]["preprocess_results"])
+
 
     fits = input["paths"]["fits"]
     fit_results = ms.fit_info(fits)
@@ -23,9 +25,7 @@ def main():
     if best_fit is None:
         raise Exception("Failed to find acceptable optimized model")
 
-    fit_json_path = os.path.join(input["paths"]["storage_directory"], "best_fit.json")
     fit_style_data = ju.read(input["paths"]["fit_styles"][best_fit["fit_type"]])
-
     fit_data = ms.build_fit_data(best_fit["params"], passive, preprocess, fit_style_data)
     
     ju.write(fit_json_path, fit_data)
