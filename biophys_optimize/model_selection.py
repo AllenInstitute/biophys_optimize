@@ -104,7 +104,7 @@ def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
     return None
 
 
-def save_fit_json(genome_vals, passive, preprocess, fit_style_info, fit_file):
+def build_fit_data(genome_vals, passive, preprocess, fit_style_info):
     json_data = {}
 
     # passive
@@ -138,8 +138,7 @@ def save_fit_json(genome_vals, passive, preprocess, fit_style_info, fit_file):
                                     "mechanism": p["mechanism"]
                                     })
 
-    with open(fit_file, "w") as f:
-        json.dump(json_data, f, indent=2)
+    return json_data
 
 
 def has_noise_block(v, t, depol_block_threshold=-50.0, block_min_duration = 50.0):
@@ -175,44 +174,3 @@ def fit_info(fits):
     return info
 
 
-def main(input_file, output_file):
-    with open(input_file, "r") as f:
-        input = json.load(f)
-
-    swc_path = input["paths"]["swc"]
-    fit_style_paths = input["paths"]["fit_styles"]
-    with open(input["paths"]["passive_results"], "r") as f:
-        passive = json.load(f)
-    with open(input["paths"]["preprocess_results"], "r") as f:
-        preprocess = json.load(f)
-
-    fits = input["paths"]["fits"]
-    fit_results = fit_info(fits)
-    best_fit = select_model(fit_results, input["paths"], passive, preprocess["v_baseline"],
-                            input["noise_1_sweeps"], input["noise_2_sweeps"])
-    if best_fit is None:
-        print "Failed to find acceptable optimized model"
-        return
-
-    fit_json_path = os.path.join(input["paths"]["storage_directory"], "best_fit.json")
-    with open(input["paths"]["fit_styles"][best_fit["fit_type"]], "r") as f:
-        fit_style_data = json.load(f)
-    save_fit_json(best_fit["params"], passive, preprocess, fit_style_data, fit_json_path)
-
-    output = {
-        "paths": {
-            "fit_json": fit_json_path,
-        }
-    }
-
-    with open(output_file, "w") as f:
-        json.dump(output, f, indent=2)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Select final model from optimization runs')
-    parser.add_argument('input', type=str)
-    parser.add_argument('output', type=str)
-    args = parser.parse_args()
-
-    main(args.input, args.output)
