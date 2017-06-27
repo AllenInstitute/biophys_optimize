@@ -12,7 +12,6 @@
     "preprocess_results": "./test_storage/preprocess_results.json", 
     "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb"
   }, 
-  "should_run": true, 
   "task_list": [
     {
       "fit_type": "f6", 
