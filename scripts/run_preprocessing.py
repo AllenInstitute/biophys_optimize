@@ -10,12 +10,12 @@ import allensdk.core.json_utilities as ju
 
 from biophys_optimize.preprocess import preprocess
 
-class PreprocessorPaths(jm.ModuleParameters):
+class PreprocessorPaths(mm.Schema):
     nwb = jm.InputFile(description="path to input NWB file")
     swc = jm.InputFile(description="path to input SWC file")
     storage_directory = jm.InputDir(description="path to storage directory")
 
-class PreprocessorSweeps(jm.ModuleParameters):
+class PreprocessorSweeps(mm.Schema):
     core_1_long_squares = mm.fields.List(mm.fields.Int, description="list of core 1 long square sweep numbers")
     core_2_long_squares = mm.fields.List(mm.fields.Int, description="list of core 2 long square sweep numbers")
     seed_1_noise = mm.fields.List(mm.fields.Int, description="list of seed 1 noise sweep numbers")

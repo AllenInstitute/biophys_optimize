@@ -7,7 +7,7 @@ import biophys_optimize.consolidate_passive_fits as cpf
 import json_module as jm
 import marshmallow as mm
 
-class ConsolidatePaths(jm.ModuleParameters):
+class ConsolidatePaths(mm.Schema):
     preprocess_results = jm.InputFile(description="path to preprocess results file")
     passive_info = jm.InputFile(description="path to passive info file")
     passive_fit_1 = jm.InputFile(desscription="path to passive fit 1 results file")

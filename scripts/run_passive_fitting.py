@@ -6,7 +6,7 @@ import biophys_optimize.neuron_passive_fit as npf
 import json_module as jm
 import marshmallow as mm
 
-class PassiveFittingPaths(jm.ModuleParameters):
+class PassiveFittingPaths(mm.Schema):
     swc = jm.InputFile(description="path to SWC file")
     up = jm.InputFile(descritpion="up data path")
     down = jm.InputFile(descritpion="down data path")

@@ -5,7 +5,7 @@ import allensdk.core.json_utilities as ju
 import json_module as jm
 import marshmallow as mm
 
-class OptimizePaths(jm.ModuleParameters):
+class OptimizePaths(mm.Schema):
     preprocess_results = jm.InputFile(description="path to preprocess results file")
     passive_results = jm.InputFile(description="path to passive results file")
     fit_style = jm.InputFile(description="path to fit style file")
