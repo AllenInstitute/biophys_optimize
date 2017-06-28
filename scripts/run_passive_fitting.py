@@ -3,23 +3,38 @@ import allensdk.core.json_utilities as ju
 import numpy as np
 import biophys_optimize.neuron_passive_fit as npf
 
+import json_module as jm
+import marshmallow as mm
+
+class PassiveFittingPaths(jm.ModuleParameters):
+    swc = jm.InputFile(description="path to SWC file")
+    up = jm.InputFile(descritpion="up data path")
+    down = jm.InputFile(descritpion="down data path")
+    passive_fit_results_file = mm.fields.Str(description="passive fit results file")
+    passive_info = mm.fields.Str(description="passive info file")
+    fit = mm.fields.List(jm.InputFile, description="list of passive fitting files")
+
+class PassiveFittingParameters(jm.ModuleParameters):
+    paths = mm.fields.Nested(PassiveFittingPaths)
+    passive_fit_type = mm.fields.Str(description="passive fit type")
+
+class PassiveFittingModule(jm.JsonModule):
+    def __init__(self, *args, **kwargs):
+        super(PassiveFittingModule, self).__init__(schema_type=PassiveFittingParameters,
+                                                    *args, **kwargs)
+
 def main():
-    parser = argparse.ArgumentParser(description='analyze cap check sweep')
-    parser.add_argument('input_json', type=str)
-    parser.add_argument('output_json', type=str)
-    args = parser.parse_args()
+    module = PassiveFittingModule()
+    
+    swc_path = module.args["paths"]["swc"].encode('ascii', 'ignore')
+    up_data = np.loadtxt(module.args["paths"]["up"])
+    down_data = np.loadtxt(module.args["paths"]["down"])
+    passive_fit_type = module.args["passive_fit_type"]
+    results_file = module.args["paths"]["passive_fit_results_file"]
 
-    input = ju.read(args.input_json)
+    info = ju.read(module.args["paths"]["passive_info"])
 
-    swc_path = input["paths"]["swc"].encode('ascii', 'ignore')
-    up_data = np.loadtxt(input["paths"]["up"])
-    down_data = np.loadtxt(input["paths"]["down"])
-    passive_fit_type = input["passive_fit_type"]
-    results_file = input["paths"]["passive_fit_results_file"]
-
-    info = ju.read(input["paths"]["passive_info"])
-
-    npf.initialize_neuron(swc_path, input["paths"]["fit"])
+    npf.initialize_neuron(swc_path, module.args["paths"]["fit"])
 
     if passive_fit_type == npf.PASSIVE_FIT_1:
         results = npf.passive_fit_1(info, up_data, down_data)        
@@ -32,7 +47,7 @@ def main():
 
     ju.write(results_file, results)
 
-    ju.write(args.output_json, { "paths": { passive_fit_type: results_file } })
+    ju.write(module.args["output_json"], { "paths": { passive_fit_type: results_file } })
 
 
 if __name__ == "__main__": main()
