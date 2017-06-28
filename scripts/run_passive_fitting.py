@@ -10,7 +10,7 @@ class PassiveFittingPaths(jm.ModuleParameters):
     swc = jm.InputFile(description="path to SWC file")
     up = jm.InputFile(descritpion="up data path")
     down = jm.InputFile(descritpion="down data path")
-    passive_fit_results_file = mm.fields.Str(description="passive fit results file")
+    passive_fit_results_file = jm.OutputFile(description="passive fit results file")
     passive_info = mm.fields.Str(description="passive info file")
     fit = mm.fields.List(jm.InputFile, description="list of passive fitting files")
 
