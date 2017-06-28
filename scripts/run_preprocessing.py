@@ -28,14 +28,10 @@ class PreprocessorParameters(jm.ModuleParameters):
     sweeps = mm.fields.Nested(PreprocessorSweeps)
     bridge_avg = mm.fields.Float(description="average bridge balance")
     
-class PreprocessorModule(jm.JsonModule):
-    def __init__(self, *args, **kwargs):
-        super(PreprocessorModule, self).__init__(schema_type=PreprocessorParameters,
-                                                 *args, **kwargs)
-
 def main():
-    module = PreprocessorModule()
     """Main sequence of pre-processing and passive fitting"""
+
+    module = jm.JsonModule(schema_type=PreprocessorParameters)
 
     nwb_path = module.args["paths"]["nwb"]
     swc_path = module.args["paths"]["swc"]

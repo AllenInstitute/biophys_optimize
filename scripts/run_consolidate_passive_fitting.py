@@ -18,13 +18,8 @@ class ConsolidatePaths(mm.Schema):
 class ConsolidateParameters(jm.ModuleParameters):
     paths = mm.fields.Nested(ConsolidatePaths)
 
-class ConsolidateModule(jm.JsonModule):
-    def __init__(self, *args, **kwargs):
-        super(ConsolidateModule, self).__init__(schema_type=ConsolidateParameters,
-                                                *args, **kwargs)    
-
 def main():
-    module = ConsolidateModule()
+    module = jm.JsonModule(schema_type=ConsolidateParameters)
 
     preprocess_results = ju.read(module.args["paths"]["preprocess_results"])
     is_spiny = preprocess_results["is_spiny"]

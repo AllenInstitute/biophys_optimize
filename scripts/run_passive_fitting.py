@@ -24,7 +24,7 @@ class PassiveFittingModule(jm.JsonModule):
                                                     *args, **kwargs)
 
 def main():
-    module = PassiveFittingModule()
+    module = jm.JsonModule(schema_type=PassiveFittingParameters)
     
     swc_path = module.args["paths"]["swc"].encode('ascii', 'ignore')
     up_data = np.loadtxt(module.args["paths"]["up"])

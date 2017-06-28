@@ -22,13 +22,8 @@ class OptimizeParameters(jm.ModuleParameters):
     mu = mm.fields.Int(description="mu")
     ngen = mm.fields.Int(description="ngen")
 
-class OptimizeModule(jm.JsonModule):
-    def __init__(self, *args, **kwargs):
-        super(OptimizeModule, self).__init__(schema_type=OptimizeParameters,
-                                             *args, **kwargs)        
-
 def main():
-    module = OptimizeModule()
+    module = jm.JsonModule(schema_type=OptimizeParameters)
 
     preprocess_results = ju.read(module.args["paths"]["preprocess_results"])
     passive_results = ju.read(module.args["paths"]["passive_results"])
@@ -47,6 +42,7 @@ def main():
                        storage_directory = module.args["paths"]["storage_directory"],
                        starting_population = module.args["paths"].get("starting_population",None))
 
+    print "writing output"
     ju.write(module.args["output_json"], results)
 
 if __name__ == "__main__": main()
