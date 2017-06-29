@@ -12,7 +12,7 @@ class ModelFitStyles(mm.Schema):
     f12 = jm.InputFile(description="")
     f13 = jm.InputFile(description="")
 
-class ModelFit(mm.fields.Dict):
+class ModelFit(mm.Schema): 
     fit_type = mm.fields.Str(description="")
     hof_fit = jm.InputFile(description="")
     hof = jm.InputFile(description="")
@@ -21,7 +21,9 @@ class ModelSelectionPaths(mm.Schema):
     swc = jm.InputFile(description="path to swc file")
     nwb = jm.InputFile(description="path to nwb file")
     fit_styles = mm.fields.Nested(ModelFitStyles, description="")
-    fits = mm.fields.List(ModelFit, description="")
+
+    fits = mm.fields.Nested(ModelFit, description="", many=True)
+
     best_fit_json_path = jm.OutputFile(description="where to store best fit")
     passive_results = jm.InputFile(description="passive results file")
     preprocess_results = jm.InputFile(description="preprocess results file")
