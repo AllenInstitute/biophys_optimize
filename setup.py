@@ -8,7 +8,7 @@ setup(
     author_email = 'nathang@alleninstitute.org',
     packages = find_packages(),
     package_data = {
-        "biophys_optimize.scripts": [ "*.py" ]
+        '': ["*.hoc","*.ses","*.mod","*.ftl"]
         },
     include_package_data = True,
     install_requires=['deap', 'neuron', 'numpy' ]
