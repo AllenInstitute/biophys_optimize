@@ -8,8 +8,12 @@ setup(
     author_email = 'nathang@alleninstitute.org',
     packages = find_packages(),
     package_data = {
-        '': ["*.hoc","*.ses","*.mod","*.ftl"]
+        'biophys_optimize': [ 'passive/*', 
+                              'fit_styles/*.json',
+                              'modfiles/*.mod',
+                              '*.hoc' ],
+        
         },
     include_package_data = True,
-    install_requires=['deap', 'neuron', 'numpy' ]
+    install_requires=['deap', 'neuron', 'numpy', 'allensdk' ]
 )
