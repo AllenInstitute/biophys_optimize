@@ -1,0 +1,56 @@
+{
+  "paths": {
+    "fits": [
+      {
+        "fit_type": "f6",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s1234/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s1234/final_hof.txt"
+      },
+      {
+        "fit_type": "f6",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s1001/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s1001/final_hof.txt"
+      },
+      {
+        "fit_type": "f6",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s4321/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s4321/final_hof.txt"
+      },
+      {
+        "fit_type": "f6",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s1024/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s1024/final_hof.txt"
+      },
+      {
+        "fit_type": "f6",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s2048/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f6/s2048/final_hof.txt"
+      },
+      {
+        "fit_type": "f12",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s1234/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s1234/final_hof.txt"
+      },
+      {
+        "fit_type": "f12",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s1001/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s1001/final_hof.txt"
+      },
+      {
+        "fit_type": "f12",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s4321/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s4321/final_hof.txt"
+      },
+      {
+        "fit_type": "f12",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s1024/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s1024/final_hof.txt"
+      },
+      {
+        "fit_type": "f12",
+        "hof_fit": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s2048/final_hof_fit.txt",
+        "hof": "/data/mat/nathang/deap_optimize/fits/eaf_485835055/f12/s2048/final_hof.txt"
+      }
+    ]
+  }
+}
