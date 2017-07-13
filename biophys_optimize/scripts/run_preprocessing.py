@@ -37,7 +37,7 @@ def main():
     swc_path = module.args["paths"]["swc"]
     storage_directory = module.args["paths"]["storage_directory"]
 
-    paths, results, passive_info, tasks = \
+    paths, results, passive_info, s1_tasks, s2_tasks = \
         preprocess(data_set=NwbDataSet(nwb_path),
                    swc_data=pd.read_table(swc_path, sep='\s+', comment='#', header=None),
                    dendrite_type_tag=module.args["dendrite_type_tag"],
@@ -61,7 +61,8 @@ def main():
 
     output = {
         "paths": paths,
-        "task_list": tasks,
+        "stage_1_task_list": s1_tasks,
+        "stage_2_task_list": s2_tasks,
     }
 
     ju.write(module.args["output_json"], output)

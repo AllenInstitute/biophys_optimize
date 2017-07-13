@@ -397,7 +397,20 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
 
     # Decide which fit(s) we are doing
     width = [target["mean"] for target in targets if target["name"] == "width"][0]
-    if is_spiny:
+
+    fit_stage_map = { "f6": "f9",
+                      "f6_noapic", "f9_noapic",
+                      "f12": "f13",
+                      "f12_noapic", "f13_noapic" }
+
+    has_apical = False
+    if 4 in pd.unique(swc_data[1]):
+        has_apical = True
+        logger.debug("Has apical dendrite")
+    else:
+        logger.debug("Does not have apical dendrite")
+                 
+    if has_apical:
         if width < 0.8:
             fit_types = ["f6", "f12"]
         else:
@@ -410,15 +423,12 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
 
     seeds = [1234, 1001, 4321, 1024, 2048]
 
-    tasks = [{"fit_type": fit_type, "seed": seed} for seed in seeds
+    stage_1_tasks = [{"fit_type": fit_type, "seed": seed} for seed in seeds
             for fit_type in fit_types]
 
-    has_apical = False
-    if 4 in pd.unique(swc_data[1]):
-        has_apical = True
-        logger.debug("Has apical dendrite")
-    else:
-        logger.debug("Does not have apical dendrite")
+    stage_2_tasks = [{"fit_type": fit_stage_map[fit_type], "seed": seed} for seed in seeds
+            for fit_type in fit_types]
+
 
     swp = ext.sweeps()[0]
     stim_amp = swp.sweep_feature("stim_amp")
@@ -440,5 +450,5 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
         },
         "target_features": targets,
         "sweeps": sweeps,
-    }, passive_info, tasks
+    }, passive_info, stage_1_tasks, stage_2_tasks
     
