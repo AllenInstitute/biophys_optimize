@@ -397,12 +397,16 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
 
     # Decide which fit(s) we are doing
     width = [target["mean"] for target in targets if target["name"] == "width"][0]
-    if (is_spiny and width < 0.8) or (not is_spiny and width > 0.8):
-        fit_types = ["f6", "f12"]
-    elif is_spiny:
-        fit_types = ["f6"]
+    if is_spiny:
+        if width < 0.8:
+            fit_types = ["f6", "f12"]
+        else:
+            fit_types = ["f6"]
     else:
-        fit_types = ["f12"]
+        if width > 0.8:
+            fit_types = ["f6_noapic", "f12_noapic"]
+        else:
+            fit_types = ["f12_noapic"]
 
     seeds = [1234, 1001, 4321, 1024, 2048]
 
