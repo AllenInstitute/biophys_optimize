@@ -135,7 +135,7 @@ def target_features(ext):
         swp.process_new_spike_feature("slow_trough_delta_v",
                                       sf.slow_trough_delta_voltage_feature,
                                       affected_by_clipping=True)
-        
+
 
     sweep_keys = swp.sweep_feature_keys()
     spike_keys = swp.spike_feature_keys()
@@ -296,7 +296,7 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
         "limit": escape_t,
         "electrode_cap": 1.0,
         "is_spiny": is_spiny,
-    } 
+    }
 
     return paths, passive_info
 
@@ -398,28 +398,31 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
     # Decide which fit(s) we are doing
     width = [target["mean"] for target in targets if target["name"] == "width"][0]
 
-    fit_stage_map = { "f6": "f9",
-                      "f6_noapic", "f9_noapic",
-                      "f12": "f13",
-                      "f12_noapic", "f13_noapic" }
-
     has_apical = False
     if 4 in pd.unique(swc_data[1]):
         has_apical = True
         logger.debug("Has apical dendrite")
     else:
         logger.debug("Does not have apical dendrite")
-                 
-    if has_apical:
+
+    if is_spiny:
         if width < 0.8:
             fit_types = ["f6", "f12"]
         else:
             fit_types = ["f6"]
     else:
         if width > 0.8:
-            fit_types = ["f6_noapic", "f12_noapic"]
+            fit_types = ["f6", "f12"]
         else:
-            fit_types = ["f12_noapic"]
+            fit_types = ["f12"]
+
+    if not has_apical:
+        fit_types = [fit_type + "_noapic" for fit_type in fit_types]
+
+    fit_stage_map = { "f6": "f9",
+                      "f6_noapic", "f9_noapic",
+                      "f12": "f13",
+                      "f12_noapic", "f13_noapic" }
 
     seeds = [1234, 1001, 4321, 1024, 2048]
 
@@ -428,7 +431,6 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
 
     stage_2_tasks = [{"fit_type": fit_stage_map[fit_type], "seed": seed} for seed in seeds
             for fit_type in fit_types]
-
 
     swp = ext.sweeps()[0]
     stim_amp = swp.sweep_feature("stim_amp")
@@ -451,4 +453,4 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
         "target_features": targets,
         "sweeps": sweeps,
     }, passive_info, stage_1_tasks, stage_2_tasks
-    
+
