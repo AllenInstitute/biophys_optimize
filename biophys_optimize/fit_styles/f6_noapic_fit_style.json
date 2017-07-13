@@ -1,5 +1,6 @@
 {
   "fit_name": "f6",
+  "check_depol_block": false,
   "channels": [
     {
       "max": 0.1,

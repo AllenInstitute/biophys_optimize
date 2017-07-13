@@ -1,5 +1,6 @@
 {
   "fit_name": "f13",
+  "check_depol_block": true,
   "features": [
     "avg_rate",
     "peak_v",

@@ -108,8 +108,8 @@ def initPopulation(pcls, ind_init, popfile):
     return pcls(ind_init(utils.normalize_actual_parameters(line)) for line in popdata.tolist())
 
 
-def optimize(hoc_files, compiled_mod_library, morphology_path, 
-             preprocess_results, passive_results, 
+def optimize(hoc_files, compiled_mod_library, morphology_path,
+             preprocess_results, passive_results,
              fit_type, fit_style_data,
              ngen, seed, mu,
              storage_directory,
@@ -121,15 +121,12 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
     targets = preprocess_results["target_features"]
     stim_params = preprocess_results["stimulus"]
 
-    block_check_fit_types = ["f9", "f13"]
-    do_block_check = False
-    if fit_type in block_check_fit_types:
+    do_block_check = fit_style_data["check_depol_block"]
+    if do_block_check:
         max_stim_amp = preprocess_results["max_stim_test_na"]
-        if max_stim_amp > stim_params["amplitude"]:
-            print "Will check for blocks"
-            do_block_check = True
-
-    print compiled_mod_library
+        if max_stim_amp <= stim_params["amplitude"]:
+            print "Depol block check not necessary"
+            do_block_check = False
 
     utils = Utils(hoc_files,
                   compiled_mod_library)
@@ -272,6 +269,6 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
     except RuntimeError:
         print "Exception encountered during parallel NEURON execution"
         MPI.COMM_WORLD.Abort()
-        
+
 
 
