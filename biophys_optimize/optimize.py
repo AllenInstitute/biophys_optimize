@@ -263,7 +263,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
 
 
         neuron_parallel.done()
-        h.quit()
+        #h.quit()
 
         return output
     except RuntimeError:

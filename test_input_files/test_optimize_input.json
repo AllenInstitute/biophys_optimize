@@ -1,5 +1,5 @@
 {
-  "fit_type": "f6", 
+  "fit_type": "f12", 
   "paths": {
     "hoc_files": [
       "stdgui.hoc", 
@@ -11,7 +11,7 @@
     "storage_directory": "./test_storage", 
     "preprocess_results": "./test_storage/preprocess_results.json", 
     "passive_results": "./test_storage/consolidated_passive_info.json", 
-    "fit_style": "/local1/stash/biophys_optimize/biophys_optimize/fit_styles/f6_fit_style.json"
+    "fit_style": "/local1/stash/biophys_optimize/biophys_optimize/fit_styles/f12_fit_style.json"
   }, 
   "seed": 1234, 
   "ngen": 5, 
