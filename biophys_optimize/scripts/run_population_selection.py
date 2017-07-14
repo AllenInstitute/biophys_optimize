@@ -7,14 +7,14 @@ import json_module as jm
 import marshmallow as mm
 
 
-class ModelFit(mm.fields.Dict):
+class ModelFit(mm.Schema):
     fit_type = mm.fields.Str(description="")
     hof_fit = jm.InputFile(description="")
     hof = jm.InputFile(description="")
 
 
 class PopulationSelectionPaths(mm.Schema):
-    fits = mm.fields.List(ModelFit, description="")
+    fits = mm.fields.Nested(ModelFit, description="", many=True)
 
 
 class PopulationSelectionParameters(jm.ModuleParameters):
