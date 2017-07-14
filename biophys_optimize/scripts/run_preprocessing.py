@@ -31,7 +31,7 @@ class PreprocessorParameters(jm.ModuleParameters):
 def main():
     """Main sequence of pre-processing and passive fitting"""
 
-    module = jm.JsonModule(schema_type=PreprocessorParameters)
+    module = jm.JsonModule(schema_type=PreprocessorParameters, logger_name=None)
 
     nwb_path = module.args["paths"]["nwb"]
     swc_path = module.args["paths"]["swc"]
