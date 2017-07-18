@@ -3,45 +3,41 @@ import allensdk.core.json_utilities as ju
 
 import biophys_optimize.model_selection as ms
 
-import json_module as jm
+import argschema
 import marshmallow as mm
 
 class ModelFitStyles(mm.Schema):
-    f6 = jm.InputFile(description="")
-    f9 = jm.InputFile(description="")
-    f12 = jm.InputFile(description="")
-    f13 = jm.InputFile(description="")
+    f6 = argschema.InputFile(description="")
+    f9 = argschema.InputFile(description="")
+    f12 = argschema.InputFile(description="")
+    f13 = argschema.InputFile(description="")
 
 class ModelFit(mm.Schema): 
     fit_type = mm.fields.Str(description="")
-    hof_fit = jm.InputFile(description="")
-    hof = jm.InputFile(description="")
+    hof_fit = argschema.InputFile(description="")
+    hof = argschema.InputFile(description="")
     
 class ModelSelectionPaths(mm.Schema):
-    swc = jm.InputFile(description="path to swc file")
-    nwb = jm.InputFile(description="path to nwb file")
+    swc = argschema.InputFile(description="path to swc file")
+    nwb = argschema.InputFile(description="path to nwb file")
     fit_styles = mm.fields.Nested(ModelFitStyles, description="")
 
     fits = mm.fields.Nested(ModelFit, description="", many=True)
 
-    best_fit_json_path = jm.OutputFile(description="where to store best fit")
-    passive_results = jm.InputFile(description="passive results file")
-    preprocess_results = jm.InputFile(description="preprocess results file")
+    best_fit_json_path = argschema.OutputFile(description="where to store best fit")
+    passive_results = argschema.InputFile(description="passive results file")
+    preprocess_results = argschema.InputFile(description="preprocess results file")
     hoc_files = mm.fields.List(mm.fields.Str, description="list of hoc files")
-    compiled_mod_library = jm.InputFile(description="path to compiled mod library file")
+    compiled_mod_library = argschema.InputFile(description="path to compiled mod library file")
     
-class ModelSelectionParameters(jm.ModuleParameters):
+class ModelSelectionParameters(argschema.ArgSchema):
     paths = mm.fields.Nested(ModelSelectionPaths)
     noise_1_sweeps = mm.fields.List(mm.fields.Int, description="list of noise 1 sweep numbers")
     noise_2_sweeps = mm.fields.List(mm.fields.Int, description="list of noise 2 sweep numbers")
 
-class ModelSelectionModule(jm.JsonModule):
-    def __init__(self, *args, **kwargs):
-        super(ModelSelectionModule, self).__init__(schema_type=ModelSelectionParameters,
-                                                   *args, **kwargs)
 
 def main():
-    module = ModelSelectionModule()
+    module = argschema.ArgSchemaParser(schema_type=ModelSelectionParameters)
 
     swc_path = module.args["paths"]["swc"]
     fit_style_paths = module.args["paths"]["fit_styles"]

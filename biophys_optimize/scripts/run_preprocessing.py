@@ -2,7 +2,7 @@ import argparse
 import pandas as pd
 import os
 
-import json_module as jm
+import argschema
 import marshmallow as mm
 
 from allensdk.core.nwb_data_set import NwbDataSet
@@ -11,9 +11,9 @@ import allensdk.core.json_utilities as ju
 from biophys_optimize.preprocess import preprocess
 
 class PreprocessorPaths(mm.Schema):
-    nwb = jm.InputFile(description="path to input NWB file")
-    swc = jm.InputFile(description="path to input SWC file")
-    storage_directory = jm.InputDir(description="path to storage directory")
+    nwb = argschema.InputFile(description="path to input NWB file")
+    swc = argschema.InputFile(description="path to input SWC file")
+    storage_directory = argschema.InputDir(description="path to storage directory")
 
 class PreprocessorSweeps(mm.Schema):
     core_1_long_squares = mm.fields.List(mm.fields.Int, description="list of core 1 long square sweep numbers")
@@ -22,7 +22,7 @@ class PreprocessorSweeps(mm.Schema):
     seed_2_noise = mm.fields.List(mm.fields.Int, description="list of seed 2 noise sweep numbers")
     cap_checks = mm.fields.List(mm.fields.Int, description="list of capacitance check sweep numbers")
 
-class PreprocessorParameters(jm.ModuleParameters):
+class PreprocessorParameters(argschema.ArgSchema):
     paths = mm.fields.Nested(PreprocessorPaths)
     dendrite_type_tag = mm.fields.Str(description="dendrite type tag")
     sweeps = mm.fields.Nested(PreprocessorSweeps)
@@ -31,7 +31,7 @@ class PreprocessorParameters(jm.ModuleParameters):
 def main():
     """Main sequence of pre-processing and passive fitting"""
 
-    module = jm.JsonModule(schema_type=PreprocessorParameters, logger_name=None)
+    module = argschema.ArgSchemaParser(schema_type=PreprocessorParameters, logger_name=None)
 
     nwb_path = module.args["paths"]["nwb"]
     swc_path = module.args["paths"]["swc"]

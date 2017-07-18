@@ -2,20 +2,20 @@ import argparse
 from biophys_optimize.optimize import optimize
 import allensdk.core.json_utilities as ju
 
-import json_module as jm
+import argschema
 import marshmallow as mm
 
 class OptimizePaths(mm.Schema):
-    preprocess_results = jm.InputFile(description="path to preprocess results file")
-    passive_results = jm.InputFile(description="path to passive results file")
-    fit_style = jm.InputFile(description="path to fit style file")
+    preprocess_results = argschema.InputFile(description="path to preprocess results file")
+    passive_results = argschema.InputFile(description="path to passive results file")
+    fit_style = argschema.InputFile(description="path to fit style file")
     hoc_files = mm.fields.List(mm.fields.Str, description="list of hoc files")
-    compiled_mod_library = jm.InputFile(description="path to compiled mod library file")
-    swc = jm.InputFile(description="path to SWC file")
+    compiled_mod_library = argschema.InputFile(description="path to compiled mod library file")
+    swc = argschema.InputFile(description="path to SWC file")
     storage_directory = mm.fields.Str(description="where to store outputs")
     starting_population = mm.fields.Str(description="starting population")
 
-class OptimizeParameters(jm.ModuleParameters):
+class OptimizeParameters(argschema.ArgSchema):
     paths = mm.fields.Nested(OptimizePaths)
     fit_type = mm.fields.Str(description="fit type")
     seed = mm.fields.Int(description="seed")
@@ -23,7 +23,7 @@ class OptimizeParameters(jm.ModuleParameters):
     ngen = mm.fields.Int(description="ngen")
 
 def main():
-    module = jm.JsonModule(schema_type=OptimizeParameters)
+    module = argschema.ArgSchemaParser(schema_type=OptimizeParameters)
 
     preprocess_results = ju.read(module.args["paths"]["preprocess_results"])
     passive_results = ju.read(module.args["paths"]["passive_results"])

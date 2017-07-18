@@ -4,22 +4,22 @@ import allensdk.core.json_utilities as ju
 
 import biophys_optimize.consolidate_passive_fits as cpf
 
-import json_module as jm
+import argschema
 import marshmallow as mm
 
 class ConsolidatePaths(mm.Schema):
-    preprocess_results = jm.InputFile(description="path to preprocess results file")
-    passive_info = jm.InputFile(description="path to passive info file")
-    passive_fit_1 = jm.InputFile(desscription="path to passive fit 1 results file")
-    passive_fit_2 = jm.InputFile(desscription="path to passive fit 2 results file")
-    passive_fit_elec = jm.InputFile(desscription="path to passive fit elec results file")
-    passive_results = jm.OutputFile(desscription="path to store consolidated results")
+    preprocess_results = argschema.InputFile(description="path to preprocess results file")
+    passive_info = argschema.InputFile(description="path to passive info file")
+    passive_fit_1 = argschema.InputFile(desscription="path to passive fit 1 results file")
+    passive_fit_2 = argschema.InputFile(desscription="path to passive fit 2 results file")
+    passive_fit_elec = argschema.InputFile(desscription="path to passive fit elec results file")
+    passive_results = argschema.OutputFile(desscription="path to store consolidated results")
 
-class ConsolidateParameters(jm.ModuleParameters):
+class ConsolidateParameters(argschema.ArgSchema):
     paths = mm.fields.Nested(ConsolidatePaths)
 
 def main():
-    module = jm.JsonModule(schema_type=ConsolidateParameters)
+    module = argschema.ArgSchemaParser(schema_type=ConsolidateParameters)
 
     preprocess_results = ju.read(module.args["paths"]["preprocess_results"])
     is_spiny = preprocess_results["is_spiny"]
