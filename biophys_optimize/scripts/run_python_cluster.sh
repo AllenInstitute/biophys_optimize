@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 export ALLENSDK_PATH=/data/informatics/mousecelltypes/biophys_optimize/allensdk/
 export ARGSCHEMA_PATH=/data/informatics/mousecelltypes/biophys_optimize/argschema/
 export MM_PATH=/data/informatics/mousecelltypes/biophys_optimize/marshmallow/
@@ -9,4 +11,4 @@ export PYTHON=${PYTHON_HOME}/bin/python
 export PATH=${PYTHON_HOME}/bin:${NEURON_HOME}/x86_64/bin:${PATH}
 NUM_PROCS=240
 
-mpiexec -np $NUM_PROCS $@
+mpiexec -np $NUM_PROCS $PYTHON $@
