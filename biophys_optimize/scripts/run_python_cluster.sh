@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 export ALLENSDK_PATH=/data/informatics/mousecelltypes/biophys_optimize/allensdk/
 export ARGSCHEMA_PATH=/data/informatics/mousecelltypes/biophys_optimize/argschema/
