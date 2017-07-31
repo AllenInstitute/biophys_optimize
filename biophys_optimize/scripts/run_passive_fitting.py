@@ -3,23 +3,22 @@ import allensdk.core.json_utilities as ju
 import numpy as np
 import biophys_optimize.neuron_passive_fit as npf
 
-import argschema
-import marshmallow as mm
+import argschema as ags
 
-class PassiveFittingPaths(mm.Schema):
-    swc = argschema.InputFile(description="path to SWC file")
-    up = argschema.InputFile(descritpion="up data path")
-    down = argschema.InputFile(descritpion="down data path")
-    passive_fit_results_file = argschema.OutputFile(description="passive fit results file")
-    passive_info = mm.fields.Str(description="passive info file")
-    fit = mm.fields.List(argschema.InputFile, description="list of passive fitting files")
+class PassiveFittingPaths(ags.schemas.DefaultSchema):
+    swc = ags.fields.InputFile(description="path to SWC file")
+    up = ags.fields.InputFile(descritpion="up data path")
+    down = ags.fields.InputFile(descritpion="down data path")
+    passive_fit_results_file = ags.fields.OutputFile(description="passive fit results file")
+    passive_info = ags.fields.Str(description="passive info file")
+    fit = ags.fields.List(ags.InputFile, description="list of passive fitting files")
 
-class PassiveFittingParameters(argschema.ArgSchema):
-    paths = mm.fields.Nested(PassiveFittingPaths)
-    passive_fit_type = mm.fields.Str(description="passive fit type")
+class PassiveFittingParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(PassiveFittingPaths)
+    passive_fit_type = ags.fields.Str(description="passive fit type")
 
 def main():
-    module = argschema.ArgSchemaParser(schema_type=PassiveFittingParameters)
+    module = ags.ArgSchemaParser(schema_type=PassiveFittingParameters)
     
     swc_path = module.args["paths"]["swc"].encode('ascii', 'ignore')
     up_data = np.loadtxt(module.args["paths"]["up"])

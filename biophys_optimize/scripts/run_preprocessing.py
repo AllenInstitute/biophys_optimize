@@ -2,36 +2,35 @@ import argparse
 import pandas as pd
 import os
 
-import argschema
-import marshmallow as mm
+import argschema as ags
 
 from allensdk.core.nwb_data_set import NwbDataSet
 import allensdk.core.json_utilities as ju
 
 from biophys_optimize.preprocess import preprocess
 
-class PreprocessorPaths(mm.Schema):
-    nwb = argschema.InputFile(description="path to input NWB file")
-    swc = argschema.InputFile(description="path to input SWC file")
-    storage_directory = argschema.InputDir(description="path to storage directory")
+class PreprocessorPaths(ags.schemas.DefaultSchema):
+    nwb = ags.fields.InputFile(description="path to input NWB file")
+    swc = ags.fields.InputFile(description="path to input SWC file")
+    storage_directory = ags.fields.InputDir(description="path to storage directory")
 
-class PreprocessorSweeps(mm.Schema):
-    core_1_long_squares = mm.fields.List(mm.fields.Int, description="list of core 1 long square sweep numbers")
-    core_2_long_squares = mm.fields.List(mm.fields.Int, description="list of core 2 long square sweep numbers")
-    seed_1_noise = mm.fields.List(mm.fields.Int, description="list of seed 1 noise sweep numbers")
-    seed_2_noise = mm.fields.List(mm.fields.Int, description="list of seed 2 noise sweep numbers")
-    cap_checks = mm.fields.List(mm.fields.Int, description="list of capacitance check sweep numbers")
+class PreprocessorSweeps(ags.schemas.DefaultSchema):
+    core_1_long_squares = ags.fields.List(ags.fields.Int, description="list of core 1 long square sweep numbers")
+    core_2_long_squares = ags.fields.List(ags.fields.Int, description="list of core 2 long square sweep numbers")
+    seed_1_noise = ags.fields.List(ags.fields.Int, description="list of seed 1 noise sweep numbers")
+    seed_2_noise = ags.fields.List(ags.fields.Int, description="list of seed 2 noise sweep numbers")
+    cap_checks = ags.fields.List(ags.fields.Int, description="list of capacitance check sweep numbers")
 
-class PreprocessorParameters(argschema.ArgSchema):
-    paths = mm.fields.Nested(PreprocessorPaths)
-    dendrite_type_tag = mm.fields.Str(description="dendrite type tag")
-    sweeps = mm.fields.Nested(PreprocessorSweeps)
-    bridge_avg = mm.fields.Float(description="average bridge balance")
+class PreprocessorParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(PreprocessorPaths)
+    dendrite_type_tag = ags.fields.Str(description="dendrite type tag")
+    sweeps = ags.fields.Nested(PreprocessorSweeps)
+    bridge_avg = ags.fields.Float(description="average bridge balance")
     
 def main():
     """Main sequence of pre-processing and passive fitting"""
 
-    module = argschema.ArgSchemaParser(schema_type=PreprocessorParameters, logger_name=None)
+    module = ags.ArgSchemaParser(schema_type=PreprocessorParameters, logger_name=None)
 
     nwb_path = module.args["paths"]["nwb"]
     swc_path = module.args["paths"]["swc"]

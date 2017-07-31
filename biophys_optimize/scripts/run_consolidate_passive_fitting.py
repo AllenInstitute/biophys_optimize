@@ -4,22 +4,21 @@ import allensdk.core.json_utilities as ju
 
 import biophys_optimize.consolidate_passive_fits as cpf
 
-import argschema
-import marshmallow as mm
+import argschema as ags
 
-class ConsolidatePaths(mm.Schema):
-    preprocess_results = argschema.InputFile(description="path to preprocess results file")
-    passive_info = argschema.InputFile(description="path to passive info file")
-    passive_fit_1 = argschema.InputFile(desscription="path to passive fit 1 results file")
-    passive_fit_2 = argschema.InputFile(desscription="path to passive fit 2 results file")
-    passive_fit_elec = argschema.InputFile(desscription="path to passive fit elec results file")
-    passive_results = argschema.OutputFile(desscription="path to store consolidated results")
+class ConsolidatePaths(ags.schemas.DefaultSchema):
+    preprocess_results = ags.fields.InputFile(description="path to preprocess results file")
+    passive_info = ags.fields.InputFile(description="path to passive info file")
+    passive_fit_1 = ags.fields.InputFile(description="path to passive fit 1 results file")
+    passive_fit_2 = ags.fields.InputFile(description="path to passive fit 2 results file")
+    passive_fit_elec = ags.fields.InputFile(description="path to passive fit elec results file")
+    passive_results = ags.fields.OutputFile(description="path to store consolidated results")
 
-class ConsolidateParameters(argschema.ArgSchema):
-    paths = mm.fields.Nested(ConsolidatePaths)
+class ConsolidateParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(ConsolidatePaths)
 
 def main():
-    module = argschema.ArgSchemaParser(schema_type=ConsolidateParameters)
+    module = ags.ArgSchemaParser(schema_type=ConsolidateParameters)
 
     preprocess_results = ju.read(module.args["paths"]["preprocess_results"])
     is_spiny = preprocess_results["is_spiny"]

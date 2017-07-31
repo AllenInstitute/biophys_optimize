@@ -3,26 +3,25 @@ import allensdk.core.json_utilities as ju
 
 import biophys_optimize.population_selection as ps
 
-import argschema
-import marshmallow as mm
+import argschema as ags
+
+class ModelFit(ags.schemas.DefaultSchema):
+    fit_type = ags.fields.Str(description="")
+    hof_fit = ags.fields.InputFile(description="")
+    hof = ags.fields.InputFile(description="")
 
 
-class ModelFit(mm.Schema):
-    fit_type = mm.fields.Str(description="")
-    hof_fit = argschema.InputFile(description="")
-    hof = argschema.InputFile(description="")
+class PopulationSelectionPaths(ags.schemas.DefaultSchema):
+    fits = ags.fields.Nested(ModelFit, description="", many=True)
 
 
-class PopulationSelectionPaths(mm.Schema):
-    fits = mm.fields.Nested(ModelFit, description="", many=True)
-
-
-class PopulationSelectionParameters(argschema.ArgSchema):
-    paths = mm.fields.Nested(PopulationSelectionPaths)
+class PopulationSelectionParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(PopulationSelectionPaths)
 
 
 def main():
-    module = argschema.ArgSchemaParser(schema_type=PopulationSelectionParameters)
+    module = ags.ArgSchemaParser(schema_type=PopulationSelectionParameters)
+    print module.args
 
     fits = module.args["paths"]["fits"]
     populations = ps.population_info(fits)

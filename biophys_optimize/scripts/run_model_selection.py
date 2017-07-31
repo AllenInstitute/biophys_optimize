@@ -3,41 +3,40 @@ import allensdk.core.json_utilities as ju
 
 import biophys_optimize.model_selection as ms
 
-import argschema
-import marshmallow as mm
+import argschema as ags
 
-class ModelFitStyles(mm.Schema):
-    f6 = argschema.InputFile(description="")
-    f9 = argschema.InputFile(description="")
-    f12 = argschema.InputFile(description="")
-    f13 = argschema.InputFile(description="")
+class ModelFitStyles(ags.schemas.DefaultSchema):
+    f6 = ags.fields.InputFile(description="")
+    f9 = ags.fields.InputFile(description="")
+    f12 = ags.fields.InputFile(description="")
+    f13 = ags.fields.InputFile(description="")
 
-class ModelFit(mm.Schema): 
-    fit_type = mm.fields.Str(description="")
-    hof_fit = argschema.InputFile(description="")
-    hof = argschema.InputFile(description="")
+class ModelFit(ags.schemas.DefaultSchema): 
+    fit_type = ags.fields.Str(description="")
+    hof_fit = ags.fields.InputFile(description="")
+    hof = ags.InputFile(description="")
     
-class ModelSelectionPaths(mm.Schema):
-    swc = argschema.InputFile(description="path to swc file")
-    nwb = argschema.InputFile(description="path to nwb file")
-    fit_styles = mm.fields.Nested(ModelFitStyles, description="")
+class ModelSelectionPaths(ags.schemas.DefaultSchema):
+    swc = ags.fields.InputFile(description="path to swc file")
+    nwb = ags.fields.InputFile(description="path to nwb file")
+    fit_styles = ags.fields.Nested(ModelFitStyles, description="")
 
-    fits = mm.fields.Nested(ModelFit, description="", many=True)
+    fits = ags.fields.Nested(ModelFit, description="", many=True)
 
-    best_fit_json_path = argschema.OutputFile(description="where to store best fit")
-    passive_results = argschema.InputFile(description="passive results file")
-    preprocess_results = argschema.InputFile(description="preprocess results file")
-    hoc_files = mm.fields.List(mm.fields.Str, description="list of hoc files")
-    compiled_mod_library = argschema.InputFile(description="path to compiled mod library file")
+    best_fit_json_path = ags.fields.OutputFile(description="where to store best fit")
+    passive_results = ags.fields.InputFile(description="passive results file")
+    preprocess_results = ags.fields.InputFile(description="preprocess results file")
+    hoc_files = ags.fields.List(ags.fields.Str, description="list of hoc files")
+    compiled_mod_library = ags.fields.InputFile(description="path to compiled mod library file")
     
-class ModelSelectionParameters(argschema.ArgSchema):
-    paths = mm.fields.Nested(ModelSelectionPaths)
-    noise_1_sweeps = mm.fields.List(mm.fields.Int, description="list of noise 1 sweep numbers")
-    noise_2_sweeps = mm.fields.List(mm.fields.Int, description="list of noise 2 sweep numbers")
+class ModelSelectionParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(ModelSelectionPaths)
+    noise_1_sweeps = ags.fields.List(ags.fields.Int, description="list of noise 1 sweep numbers")
+    noise_2_sweeps = ags.fields.List(ags.fields.Int, description="list of noise 2 sweep numbers")
 
 
 def main():
-    module = argschema.ArgSchemaParser(schema_type=ModelSelectionParameters)
+    module = ags.ArgSchemaParser(schema_type=ModelSelectionParameters)
 
     swc_path = module.args["paths"]["swc"]
     fit_style_paths = module.args["paths"]["fit_styles"]
