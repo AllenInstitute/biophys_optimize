@@ -24,16 +24,16 @@ def main():
     is_spiny = preprocess_results["is_spiny"]
     info = ju.read(module.args["paths"]["passive_info"])
 
-    fit_1_path = module.args["paths"]["passive_fit_1"]
-    fit_1 = ju.read(fit_1_path)
-
-    fit_2_path = module.args["paths"]["passive_fit_2"]
-    fit_2 = ju.read(fit_2_path)
-
-    fit_3_path = module.args["paths"]["passive_fit_elec"]
-    fit_3 = ju.read(fit_3_path)
-
     if info["should_run"]:
+        fit_1_path = module.args["paths"]["passive_fit_1"]
+        fit_1 = ju.read(fit_1_path)
+
+        fit_2_path = module.args["paths"]["passive_fit_2"]
+        fit_2 = ju.read(fit_2_path)
+
+        fit_3_path = module.args["paths"]["passive_fit_elec"]
+        fit_3 = ju.read(fit_3_path)
+
         ra, cm1, cm2 = cpf.compare_runs(preprocess_results, fit_1, fit_2, fit_3)
     else:
         ra = 100.
@@ -65,4 +65,4 @@ def main():
     ju.write(module.args["output_json"], output)
 
 if __name__ == "__main__": main()
-    
+
