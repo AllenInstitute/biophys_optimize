@@ -18,6 +18,8 @@ import sweep_functions as sf
 
 DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
 
+class NoUsableSweepsException(Exception): pass
+
 class FitStyle():
     F6 = "f6"
     F6_NOAPIC = "f6_noapic"
@@ -429,7 +431,7 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
     sweeps_to_fit, start, end = select_sweeps(sweeps, data_set)
     if len(sweeps_to_fit) == 0:
         logging.info("No usable sweeps found")
-        sys.exit()
+        raise NoUsableSweepsException("No usable sweeps found")
 
     paths, passive_info = prepare_for_passive_fit(sweeps["cap_checks"],
                                                   bridge_avg,
