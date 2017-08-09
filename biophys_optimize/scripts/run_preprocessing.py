@@ -7,7 +7,7 @@ import argschema as ags
 from allensdk.core.nwb_data_set import NwbDataSet
 import allensdk.core.json_utilities as ju
 
-from biophys_optimize.preprocess import preprocess
+from biophys_optimize.preprocess import preprocess, NoUsableSweepsException
 
 class PreprocessorPaths(ags.schemas.DefaultSchema):
     nwb = ags.fields.InputFile(description="path to input NWB file")
@@ -36,13 +36,17 @@ def main():
     swc_path = module.args["paths"]["swc"]
     storage_directory = module.args["paths"]["storage_directory"]
 
-    paths, results, passive_info, s1_tasks, s2_tasks = \
-        preprocess(data_set=NwbDataSet(nwb_path),
-                   swc_data=pd.read_table(swc_path, sep='\s+', comment='#', header=None),
-                   dendrite_type_tag=module.args["dendrite_type_tag"],
-                   sweeps=module.args["sweeps"],
-                   bridge_avg=module.args["bridge_avg"],
-                   storage_directory=storage_directory)
+    try:
+        paths, results, passive_info, s1_tasks, s2_tasks = \
+            preprocess(data_set=NwbDataSet(nwb_path),
+                       swc_data=pd.read_table(swc_path, sep='\s+', comment='#', header=None),
+                       dendrite_type_tag=module.args["dendrite_type_tag"],
+                       sweeps=module.args["sweeps"],
+                       bridge_avg=module.args["bridge_avg"],
+                       storage_directory=storage_directory)
+    except NoUsableSweepsException as e:
+        ju.write(module.args["output_json"], { 'error': e.message })
+        return
 
     preprocess_results_path = os.path.join(storage_directory, "preprocess_results.json")
     ju.write(preprocess_results_path, results)

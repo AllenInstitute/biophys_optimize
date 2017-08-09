@@ -10,5 +10,6 @@ export PYTHONPATH=${NEURON_HOME}/lib/python:${ALLENSDK_PATH}:${ARGSCHEMA_PATH}:$
 export PYTHON_HOME=/shared/utils.x86_64/python-2.7
 export PYTHON=${PYTHON_HOME}/bin/python
 export PATH=${PYTHON_HOME}/bin:${NEURON_HOME}/x86_64/bin:${PATH}
+NUM_PROCS=240
 
-$PYTHON $@
+mpiexec -np $NUM_PROCS $PYTHON $@

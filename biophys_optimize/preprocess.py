@@ -18,6 +18,8 @@ import sweep_functions as sf
 
 DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
 
+class NoUsableSweepsException(Exception): pass
+
 class FitStyle():
     F6 = "f6"
     F6_NOAPIC = "f6_noapic"
@@ -110,9 +112,9 @@ def find_core1_trace(data_set, c1_sweeps):
                 sweep_to_use_isi_cv = s["isi_cv"]
     if sweep_to_use == -1:
         logging.info("Could not find appropriate core 1 sweep!")
-        return []
+        return np.array([])
     else:
-        return [sweep_to_use]
+        return np.array([sweep_to_use])
 
 
 def is_trace_good_quality(swp):
@@ -265,7 +267,7 @@ def select_sweeps(sweeps_input, data_set):
                 n_good[amp] += 1
                 sweeps_by_amp[amp].append(i)
 
-        if max(n_good.values()) <= 1:
+        if len(n_good) == 0 or max(n_good.values()) <= 1:
             logging.info("Not enough good Core 2 traces; using Core 1")
             sweeps_to_fit = find_core1_trace(data_set, sweeps_input["core_1_long_squares"])
             start, end = sf.C1LS_START, sf.C1LS_END
@@ -302,7 +304,7 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
     """
     if len(sweeps) == 0:
         logging.info("No cap check trace found")
-        return {"should_run": False}
+        return {}, {"should_run": False}
 
     grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
 
@@ -429,7 +431,7 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
     sweeps_to_fit, start, end = select_sweeps(sweeps, data_set)
     if len(sweeps_to_fit) == 0:
         logging.info("No usable sweeps found")
-        sys.exit()
+        raise NoUsableSweepsException("No usable sweeps found")
 
     paths, passive_info = prepare_for_passive_fit(sweeps["cap_checks"],
                                                   bridge_avg,
@@ -451,7 +453,7 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
         logging.debug("Does not have apical dendrite")
 
 
-    fit_types = FitStyle.get_fit_types(has_apical=has_apical, 
+    fit_types = FitStyle.get_fit_types(has_apical=has_apical,
                                        is_spiny=is_spiny,
                                        width=width)
 

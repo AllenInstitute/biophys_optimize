@@ -19,19 +19,23 @@ class PassiveFittingParameters(ags.ArgSchema):
 
 def main():
     module = ags.ArgSchemaParser(schema_type=PassiveFittingParameters)
-    
+
+    info = ju.read(module.args["paths"]["passive_info"])
+    if not info["should_run"]:
+        ju.write(module.args["output_json"], { "paths": {} })
+        return
+
     swc_path = module.args["paths"]["swc"].encode('ascii', 'ignore')
     up_data = np.loadtxt(module.args["paths"]["up"])
     down_data = np.loadtxt(module.args["paths"]["down"])
     passive_fit_type = module.args["passive_fit_type"]
     results_file = module.args["paths"]["passive_fit_results_file"]
 
-    info = ju.read(module.args["paths"]["passive_info"])
 
     npf.initialize_neuron(swc_path, module.args["paths"]["fit"])
 
     if passive_fit_type == npf.PASSIVE_FIT_1:
-        results = npf.passive_fit_1(info, up_data, down_data)        
+        results = npf.passive_fit_1(info, up_data, down_data)
     elif passive_fit_type == npf.PASSIVE_FIT_2:
         results = npf.passive_fit_2(info, up_data, down_data)
     elif passive_fit_type == npf.PASSIVE_FIT_ELEC:
