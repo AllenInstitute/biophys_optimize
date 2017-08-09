@@ -15,5 +15,5 @@ setup(
         
         },
     include_package_data = True,
-    install_requires=['deap', 'neuron', 'numpy', 'allensdk' ]
+    install_requires=['deap', 'neuron', 'numpy', 'allensdk', 'argschema' ]
 )

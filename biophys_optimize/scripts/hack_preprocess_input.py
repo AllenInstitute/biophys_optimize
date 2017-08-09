@@ -90,10 +90,12 @@ def main():
     parser = argparse.ArgumentParser(description='Make a preprocess input json file')
     parser.add_argument('specimen_id')
     parser.add_argument('storage_directory')
+    parser.add_argument('output_json')
     args = parser.parse_args()
 
     specimen_id = args.specimen_id
     storage_directory = args.storage_directory
+    output_json = args.output_json
 
     result = preprocess_info_from_lims(specimen_id)
     if not result:
@@ -127,7 +129,7 @@ def main():
         "bridge_avg": bridge_avg,
     }
 
-    with open(specimen_id + "_preprocess_input.json", "w") as f:
+    with open(output_json, "w") as f:
         json.dump(output, f, indent=2)
 
 if __name__ == "__main__": main()

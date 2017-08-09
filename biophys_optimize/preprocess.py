@@ -16,10 +16,52 @@ from allensdk.config.manifest import Manifest
 import check_fi_shift
 import sweep_functions as sf
 
+DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+class FitStyle():
+    F6 = "f6"
+    F6_NOAPIC = "f6_noapic"
 
+    F9 = "f9"
+    F9_NOAPIC = "f9_noapic"
+
+    F12 = "f12"
+    F12_NOAPIC = "f12_noapic"
+
+    F13 = "f13"
+    F13_NOAPIC = "f13_noapic"
+
+    FIT_STAGE_MAP = { F6: F9,
+                      F6_NOAPIC: F9_NOAPIC,
+                      F12: F13,
+                      F12_NOAPIC: F13_NOAPIC }
+
+    FIT_NOAPIC_MAP = { F6: F6_NOAPIC,
+                       F9: F9_NOAPIC,
+                       F12: F12_NOAPIC,
+                       F13: F13_NOAPIC }
+
+    @staticmethod
+    def get_fit_types(has_apical, is_spiny, width):
+        if is_spiny:
+            if width < 0.8:
+                fit_types = [ FitStyle.F6, FitStyle.F12 ]
+            else:
+                fit_types = [ FitStyle.F6 ]
+        else:
+            if width > 0.8:
+                fit_types = [ FitStyle.F6, FitStyle.F12 ]
+            else:
+                fit_types = [ FitStyle.F12 ]
+
+        if not has_apical:
+            fit_types = [ FitStyle.FIT_NOAPIC_MAP[fit_type] for fit_type in fit_types]
+
+        return fit_types
+
+    @staticmethod
+    def map_stage_2(stage_1):
+        return  FitStyle.FIT_STAGE_MAP[stage_1]
 
 def get_cap_check_indices(i):
     """Find the indices of the upward and downward pulses in the current trace `i`
@@ -62,12 +104,12 @@ def find_core1_trace(data_set, c1_sweeps):
             elif s["amp"] < sweep_to_use_amp:
                 use_new_sweep = True
             if use_new_sweep:
-                logger.info("now using sweep %d", s["sweep_num"])
+                logging.info("now using sweep %d", s["sweep_num"])
                 sweep_to_use = s["sweep_num"]
                 sweep_to_use_amp = s["amp"]
                 sweep_to_use_isi_cv = s["isi_cv"]
     if sweep_to_use == -1:
-        logger.info("Could not find appropriate core 1 sweep!")
+        logging.info("Could not find appropriate core 1 sweep!")
         return []
     else:
         return [sweep_to_use]
@@ -168,7 +210,7 @@ def target_features(ext):
         elif k in spike_keys:
             values = ext.spike_feature_averages(k)
         else:
-            logger.debug("Could not find feature %s", k)
+            logging.debug("Could not find feature %s", k)
             continue
 
         t = {"name": k, "mean": float(values.mean()), "stdev": float(values.std())}
@@ -205,7 +247,7 @@ def select_sweeps(sweeps_input, data_set):
     fi_shift, n_core2 = check_fi_shift.estimate_fi_shift(sweeps_input, data_set)
     fi_shift_threshold = 30.0
     if abs(fi_shift) > fi_shift_threshold:
-        logger.info("f-I curve shifted; using Core 1")
+        logging.info("f-I curve shifted; using Core 1")
         sweeps_to_fit = find_core1_trace(data_set, sweeps_input["core_1_long_squares"])
         start, end = sf.C1LS_START, sf.C1LS_END
     else:
@@ -224,7 +266,7 @@ def select_sweeps(sweeps_input, data_set):
                 sweeps_by_amp[amp].append(i)
 
         if max(n_good.values()) <= 1:
-            logger.info("Not enough good Core 2 traces; using Core 1")
+            logging.info("Not enough good Core 2 traces; using Core 1")
             sweeps_to_fit = find_core1_trace(data_set, sweeps_input["core_1_long_squares"])
             start, end = sf.C1LS_START, sf.C1LS_END
         else:
@@ -259,7 +301,7 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
         information about fitting for NEURON
     """
     if len(sweeps) == 0:
-        logger.info("No cap check trace found")
+        logging.info("No cap check trace found")
         return {"should_run": False}
 
     grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
@@ -373,23 +415,26 @@ def max_i_for_depol_block_check(sweeps_input, data_set):
     return max_i
 
 def preprocess(data_set, swc_data, dendrite_type_tag,
-               sweeps, bridge_avg, storage_directory):
+               sweeps, bridge_avg, storage_directory,
+               seeds=DEFAULT_SEEDS, jxn=-14.0):
+
     is_spiny = True
     if dendrite_type_tag == "dendrite type - aspiny":
         is_spiny = False
+        logging.debug("is spiny")
+    else:
+        logging.debug("is not spiny")
 
     # Check for fi curve shift to decide to use core1 or core2
     sweeps_to_fit, start, end = select_sweeps(sweeps, data_set)
     if len(sweeps_to_fit) == 0:
-        logger.info("No usable sweeps found")
+        logging.info("No usable sweeps found")
         sys.exit()
 
     paths, passive_info = prepare_for_passive_fit(sweeps["cap_checks"],
                                                   bridge_avg,
                                                   is_spiny, data_set,
                                                   storage_directory)
-
-    jxn = -14.0
 
     ext = sf.sweep_set_extractor_from_list(sweeps_to_fit, data_set, start, end, jxn=jxn)
     targets = target_features(ext)
@@ -401,35 +446,19 @@ def preprocess(data_set, swc_data, dendrite_type_tag,
     has_apical = False
     if 4 in pd.unique(swc_data[1]):
         has_apical = True
-        logger.debug("Has apical dendrite")
+        logging.debug("Has apical dendrite")
     else:
-        logger.debug("Does not have apical dendrite")
+        logging.debug("Does not have apical dendrite")
 
-    if is_spiny:
-        if width < 0.8:
-            fit_types = ["f6", "f12"]
-        else:
-            fit_types = ["f6"]
-    else:
-        if width > 0.8:
-            fit_types = ["f6", "f12"]
-        else:
-            fit_types = ["f12"]
 
-    if not has_apical:
-        fit_types = [fit_type + "_noapic" for fit_type in fit_types]
-
-    fit_stage_map = { "f6": "f9",
-                      "f6_noapic", "f9_noapic",
-                      "f12": "f13",
-                      "f12_noapic", "f13_noapic" }
-
-    seeds = [1234, 1001, 4321, 1024, 2048]
+    fit_types = FitStyle.get_fit_types(has_apical=has_apical, 
+                                       is_spiny=is_spiny,
+                                       width=width)
 
     stage_1_tasks = [{"fit_type": fit_type, "seed": seed} for seed in seeds
             for fit_type in fit_types]
 
-    stage_2_tasks = [{"fit_type": fit_stage_map[fit_type], "seed": seed} for seed in seeds
+    stage_2_tasks = [{"fit_type": FitStyle.map_stage_2(fit_type), "seed": seed} for seed in seeds
             for fit_type in fit_types]
 
     swp = ext.sweeps()[0]

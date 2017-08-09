@@ -10,6 +10,7 @@ parser.add_argument('--fit_type', default="f6")
 parser.add_argument('--seed', default=1234, type=int)
 parser.add_argument('--mu', default=10, type=int)
 parser.add_argument('--ngen', default=5, type=int)
+parser.add_argument('--sp', default=None, type=str)
 args = parser.parse_args()
 
 data = ju.read(args.input)
@@ -29,7 +30,10 @@ output = {
   "fit_type": args.fit_type,
   "seed": args.seed,
   "mu": args.mu,
-  "ngen": args.ngen
+  "ngen": args.ngen,
 }
+
+if args.sp is not None:
+    output["paths"]["starting_population"] = args.sp
 
 ju.write(args.output, output)

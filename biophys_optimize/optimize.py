@@ -263,12 +263,12 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
 
 
         neuron_parallel.done()
-        h.quit()
 
         return output
-    except RuntimeError:
+    except Exception as e:
         print "Exception encountered during parallel NEURON execution"
         MPI.COMM_WORLD.Abort()
+        raise
 
 
 

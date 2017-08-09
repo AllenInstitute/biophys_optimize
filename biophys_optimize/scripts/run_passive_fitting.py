@@ -3,28 +3,22 @@ import allensdk.core.json_utilities as ju
 import numpy as np
 import biophys_optimize.neuron_passive_fit as npf
 
-import json_module as jm
-import marshmallow as mm
+import argschema as ags
 
-class PassiveFittingPaths(mm.Schema):
-    swc = jm.InputFile(description="path to SWC file")
-    up = jm.InputFile(descritpion="up data path")
-    down = jm.InputFile(descritpion="down data path")
-    passive_fit_results_file = jm.OutputFile(description="passive fit results file")
-    passive_info = mm.fields.Str(description="passive info file")
-    fit = mm.fields.List(jm.InputFile, description="list of passive fitting files")
+class PassiveFittingPaths(ags.schemas.DefaultSchema):
+    swc = ags.fields.InputFile(description="path to SWC file")
+    up = ags.fields.InputFile(descritpion="up data path")
+    down = ags.fields.InputFile(descritpion="down data path")
+    passive_fit_results_file = ags.fields.OutputFile(description="passive fit results file")
+    passive_info = ags.fields.Str(description="passive info file")
+    fit = ags.fields.List(ags.InputFile, description="list of passive fitting files")
 
-class PassiveFittingParameters(jm.ModuleParameters):
-    paths = mm.fields.Nested(PassiveFittingPaths)
-    passive_fit_type = mm.fields.Str(description="passive fit type")
-
-class PassiveFittingModule(jm.JsonModule):
-    def __init__(self, *args, **kwargs):
-        super(PassiveFittingModule, self).__init__(schema_type=PassiveFittingParameters,
-                                                    *args, **kwargs)
+class PassiveFittingParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(PassiveFittingPaths)
+    passive_fit_type = ags.fields.Str(description="passive fit type")
 
 def main():
-    module = jm.JsonModule(schema_type=PassiveFittingParameters)
+    module = ags.ArgSchemaParser(schema_type=PassiveFittingParameters)
     
     swc_path = module.args["paths"]["swc"].encode('ascii', 'ignore')
     up_data = np.loadtxt(module.args["paths"]["up"])

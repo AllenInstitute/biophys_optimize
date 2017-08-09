@@ -2,28 +2,27 @@ import argparse
 from biophys_optimize.optimize import optimize
 import allensdk.core.json_utilities as ju
 
-import json_module as jm
-import marshmallow as mm
+import argschema as ags
 
-class OptimizePaths(mm.Schema):
-    preprocess_results = jm.InputFile(description="path to preprocess results file")
-    passive_results = jm.InputFile(description="path to passive results file")
-    fit_style = jm.InputFile(description="path to fit style file")
-    hoc_files = mm.fields.List(mm.fields.Str, description="list of hoc files")
-    compiled_mod_library = jm.InputFile(description="path to compiled mod library file")
-    swc = jm.InputFile(description="path to SWC file")
-    storage_directory = mm.fields.Str(description="where to store outputs")
-    starting_population = mm.fields.Str(description="starting population")
+class OptimizePaths(ags.schemas.DefaultSchema):
+    preprocess_results = ags.fields.InputFile(description="path to preprocess results file")
+    passive_results = ags.fields.InputFile(description="path to passive results file")
+    fit_style = ags.fields.InputFile(description="path to fit style file")
+    hoc_files = ags.fields.List(ags.fields.Str, description="list of hoc files")
+    compiled_mod_library = ags.fields.InputFile(description="path to compiled mod library file")
+    swc = ags.fields.InputFile(description="path to SWC file")
+    storage_directory = ags.fields.Str(description="where to store outputs")
+    starting_population = ags.fields.Str(description="starting population")
 
-class OptimizeParameters(jm.ModuleParameters):
-    paths = mm.fields.Nested(OptimizePaths)
-    fit_type = mm.fields.Str(description="fit type")
-    seed = mm.fields.Int(description="seed")
-    mu = mm.fields.Int(description="mu")
-    ngen = mm.fields.Int(description="ngen")
+class OptimizeParameters(ags.ArgSchema):
+    paths = ags.fields.Nested(OptimizePaths)
+    fit_type = ags.fields.Str(description="fit type")
+    seed = ags.fields.Int(description="seed")
+    mu = ags.fields.Int(description="mu")
+    ngen = ags.fields.Int(description="ngen")
 
 def main():
-    module = jm.JsonModule(schema_type=OptimizeParameters)
+    module = ags.ArgSchemaParser(schema_type=OptimizeParameters)
 
     preprocess_results = ju.read(module.args["paths"]["preprocess_results"])
     passive_results = ju.read(module.args["paths"]["passive_results"])

@@ -1,0 +1,16 @@
+{
+  "paths": {
+    "fits": [
+      {
+        "fit_type": "f9", 
+        "hof": "./test_storage/f9_1234_final_hof.txt", 
+        "hof_fit": "./test_storage/f9_1234_final_hof_fit.txt"
+      }, 
+      {
+        "fit_type": "f13", 
+        "hof": "./test_storage/f13_1234_final_hof.txt", 
+        "hof_fit": "./test_storage/f13_1234_final_hof_fit.txt"
+      }
+    ]
+  }
+}
