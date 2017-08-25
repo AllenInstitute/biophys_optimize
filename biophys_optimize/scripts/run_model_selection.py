@@ -1,3 +1,4 @@
+import logging
 import argparse
 import allensdk.core.json_utilities as ju
 
@@ -52,9 +53,11 @@ def main():
     if best_fit is None:
         raise Exception("Failed to find acceptable optimized model")
 
+    logging.info("building fit data")
     fit_style_data = ju.read(module.args["paths"]["fit_styles"][best_fit["fit_type"]])
     fit_data = ms.build_fit_data(best_fit["params"], passive, preprocess, fit_style_data)
     
+    logging.info("writing fit data: %s", best_fit_json_path)
     ju.write(best_fit_json_path, fit_data)
 
     output = {
@@ -63,6 +66,7 @@ def main():
         }
     }
 
+    logging.info("writing output json: %s", module.args["output_json"])
     ju.write(module.args["output_json"], output)
 
 if __name__ == "__main__": main()
