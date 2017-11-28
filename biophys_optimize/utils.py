@@ -9,7 +9,8 @@ class Utils:
 
     def __init__(self, hoc_files_to_load, mod_library_path):
         self.h = h
-        self.h.nrn_load_dll(mod_library_path.encode('ascii', 'ignore'))
+        if mod_library_path:
+            self.h.nrn_load_dll(mod_library_path.encode('ascii', 'ignore'))
         for file in hoc_files_to_load:
             self.h.load_file(file.encode('ascii', 'ignore'))
         self.stim = None
@@ -219,7 +220,7 @@ class Utils:
         sweep_keys = swp.sweep_feature_keys()
         spike_keys = swp.spike_feature_keys()
         out_features = []
-        for f in feature_names:
+        for k in feature_names:
             if k in sweep_keys:
                 out_features.append(swp.sweep_feature(k))
             elif k in spike_keys:
