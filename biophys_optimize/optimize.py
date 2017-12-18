@@ -34,11 +34,17 @@ def eval_param_set(params):
     utils.set_normalized_parameters(params)
     h.finitialize()
     h.run()
-    feature_errors = utils.calculate_feature_errors(t_vec.as_numpy(),
-                                                    v_vec.as_numpy(),
-                                                    i_vec.as_numpy(),
-                                                    features,
-                                                    targets)
+    
+    try:
+        feature_errors = utils.calculate_feature_errors(t_vec.as_numpy(),
+                                                        v_vec.as_numpy(),
+                                                        i_vec.as_numpy(),
+                                                        features,
+                                                        targets)
+    except:
+        print("Error with parameter set: %s" % str(params))
+        raise
+
     min_fail_penalty = 75.0
     if do_block_check and np.sum(feature_errors) < min_fail_penalty * len(feature_errors):
         if check_for_block():
@@ -125,7 +131,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
     if do_block_check:
         max_stim_amp = preprocess_results["max_stim_test_na"]
         if max_stim_amp <= stim_params["amplitude"]:
-            print "Depol block check not necessary"
+            print("Depol block check not necessary")
             do_block_check = False
 
     utils = Utils(hoc_files,
@@ -153,7 +159,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
     try:
         neuron_parallel.runworker()
 
-        print "Setting up GA"
+        print("Setting up GA")
         random.seed(seed)
 
         cxpb = 0.1
@@ -189,7 +195,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
         logbook.header = "gen", "nevals", "min", "max", "best"
 
         if starting_population is not None:
-            print "Using a pre-defined starting population"
+            print("Using a pre-defined starting population")
             toolbox.register("population_start", initPopulation, list, creator.Individual)
             pop = toolbox.population_start(starting_population)
         else:
@@ -206,9 +212,9 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
 
         record = stats.compile(pop)
         logbook.record(gen=0, nevals=len(invalid_ind), **record)
-        print logbook.stream
-        print "Best so far:"
-        print utils.actual_parameters_from_normalized(hof[0])
+        print(logbook.stream)
+        print("Best so far:")
+        print(utils.actual_parameters_from_normalized(hof[0]))
 
         for gen in range(1, ngen + 1):
             offspring = toolbox.variate(pop, toolbox, cxpb, 1.0)
@@ -224,9 +230,9 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
 
             record = stats.compile(pop)
             logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-            print logbook.stream
-            print "Best so far:"
-            print utils.actual_parameters_from_normalized(hof[0])
+            print(logbook.stream)
+            print("Best so far:")
+            print(utils.actual_parameters_from_normalized(hof[0]))
 
             utils.set_normalized_parameters(hof[0])
             h.finitialize()
@@ -236,7 +242,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
                                                             i_vec.as_numpy(),
                                                             features,
                                                             targets)
-            print "Error vector for best so far: ", feature_errors
+            print("Error vector for best so far: " + str(feature_errors))
 
         prefix = "{:s}_{:d}_".format(fit_type, seed)
 
@@ -266,7 +272,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
 
         return output
     except:
-        print "Exception encountered during parallel NEURON execution"
+        print("Exception encountered during parallel NEURON execution")
         MPI.COMM_WORLD.Abort()
         raise
 
