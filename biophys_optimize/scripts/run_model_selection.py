@@ -8,9 +8,13 @@ import argschema as ags
 
 class ModelFitStyles(ags.schemas.DefaultSchema):
     f6 = ags.fields.InputFile(description="")
+    f6_noapic = ags.fields.InputFile(description="")
     f9 = ags.fields.InputFile(description="")
+    f9_noapic = ags.fields.InputFile(description="")
     f12 = ags.fields.InputFile(description="")
+    f12_noapic = ags.fields.InputFile(description="")
     f13 = ags.fields.InputFile(description="")
+    f13_noapic = ags.fields.InputFile(description="")
 
 class ModelFit(ags.schemas.DefaultSchema): 
     fit_type = ags.fields.Str(description="")
