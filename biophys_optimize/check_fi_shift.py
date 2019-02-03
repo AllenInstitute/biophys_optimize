@@ -5,7 +5,7 @@ from collections import Counter
 import argparse
 
 from allensdk.core.nwb_data_set import NwbDataSet
-import sweep_functions as sf
+from biophys_optimize import sweep_functions as sf
 
 
 def calculate_fi_curves(sweeps_input, data_set):

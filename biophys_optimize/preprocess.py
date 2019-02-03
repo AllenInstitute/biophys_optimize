@@ -13,8 +13,8 @@ from collections import Counter
 
 from allensdk.config.manifest import Manifest
 
-import check_fi_shift
-import sweep_functions as sf
+from biophys_optimize import check_fi_shift
+from biophys_optimize import sweep_functions as sf
 
 DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
 
