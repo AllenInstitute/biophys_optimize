@@ -1,9 +1,9 @@
 {
   "bridge_avg": 10.1953601837158, 
   "paths": {
-    "swc": "/projects/mousecelltypes/vol1/prod146/specimen_313862022/Scnn1a-Tg2-Cre_Ai14_IVSCC_-167081.03.02.01_397905347_m.swc", 
+    "swc": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/reconstruction.swc", 
     "storage_directory": "test_storage/", 
-    "nwb": "/projects/mousecelltypes/vol1/prod115/Ephys_Specimen_Roi_plan_313862020/313862020.nwb"
+    "nwb": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/ephys.nwb"
   }, 
   "dendrite_type_tag": "dendrite type - spiny", 
   "sweeps": {
@@ -37,5 +37,6 @@
     "cap_checks": [
       69
     ]
-  }
+  },
+    "output_json": "output.json"
 }

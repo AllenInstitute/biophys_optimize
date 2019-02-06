@@ -1,0 +1,95 @@
+{
+  "paths": {
+    "down": "test_storage/downbase.dat",
+    "storage_directory": "test_storage/",
+    "preprocess_results": "test_storage/preprocess_results.json",
+    "nwb": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/ephys.nwb",
+    "passive_info": "test_storage/passive_info.json",
+    "swc": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/reconstruction.swc",
+    "up": "test_storage/upbase.dat"
+  },
+  "stage_2_task_list": [
+    {
+      "fit_type": "f9",
+      "seed": 1234
+    },
+    {
+      "fit_type": "f13",
+      "seed": 1234
+    },
+    {
+      "fit_type": "f9",
+      "seed": 1001
+    },
+    {
+      "fit_type": "f13",
+      "seed": 1001
+    },
+    {
+      "fit_type": "f9",
+      "seed": 4321
+    },
+    {
+      "fit_type": "f13",
+      "seed": 4321
+    },
+    {
+      "fit_type": "f9",
+      "seed": 1024
+    },
+    {
+      "fit_type": "f13",
+      "seed": 1024
+    },
+    {
+      "fit_type": "f9",
+      "seed": 2048
+    },
+    {
+      "fit_type": "f13",
+      "seed": 2048
+    }
+  ],
+  "stage_1_task_list": [
+    {
+      "fit_type": "f6",
+      "seed": 1234
+    },
+    {
+      "fit_type": "f12",
+      "seed": 1234
+    },
+    {
+      "fit_type": "f6",
+      "seed": 1001
+    },
+    {
+      "fit_type": "f12",
+      "seed": 1001
+    },
+    {
+      "fit_type": "f6",
+      "seed": 4321
+    },
+    {
+      "fit_type": "f12",
+      "seed": 4321
+    },
+    {
+      "fit_type": "f6",
+      "seed": 1024
+    },
+    {
+      "fit_type": "f12",
+      "seed": 1024
+    },
+    {
+      "fit_type": "f6",
+      "seed": 2048
+    },
+    {
+      "fit_type": "f12",
+      "seed": 2048
+    }
+  ]
+}
