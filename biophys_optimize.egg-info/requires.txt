@@ -1,0 +1,5 @@
+deap
+neuron
+numpy
+allensdk
+argschema
