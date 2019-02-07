@@ -13,3 +13,4 @@ Follow the Jupyter Notebook at https://github.com/latimerb/GeneralTutorials/blob
 ## b) Run test_preprocessing.py  
 python -m biophys_optimize.scripts.run_preprocessing --input_json ./test_input_files/test_preprocess_input.json
 
+# 2) Passive fitting
