@@ -7,7 +7,7 @@ python setup.py install
 # 1) Pre-process
 
 Run:
-python -m biophys_optimize.run_preprocessing --help
+python -m biophys_optimize.scripts.run_preprocessing --help
 to get command line options. There are a handful of JSON files for examples in test_input_files.
 
 ## a) Download data using AllenSDK and edit JSON file
