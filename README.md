@@ -1,6 +1,9 @@
 # biophys_optimize
 Optimization of single-cell biophysically detailed models
 
+Installation:
+python setup.py install
+
 # 1) Pre-process
 
 Run:
