@@ -26,5 +26,5 @@ $ python -m biophys_optimize.scripts.run_preprocessing --input_json ./test_input
 ## a) Edit the passive JSON file
 Change all the paths in the /test_input_files/test_passive_input.json file just as in step 1a. Other parameters should still be the same. Then run:
 ```bash
-$ python -m biophys_optimize.scripts.run_passive_fitting --input_json ./test_input_files/test_passive_input.json
+$ python -m biophys_optimize.scripts.run_passive_fitting --input_json ./test_input_files/test_passive_input_1.json
 ```
