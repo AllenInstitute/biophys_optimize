@@ -1,7 +1,6 @@
 import argparse
 import pandas as pd
 import os
-import pdb
 import argschema as ags
 
 from allensdk.core.nwb_data_set import NwbDataSet

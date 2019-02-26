@@ -2,7 +2,6 @@ import argparse
 import allensdk.core.json_utilities as ju
 import numpy as np
 import biophys_optimize.neuron_passive_fit as npf
-import pdb
 
 import argschema as ags
 
