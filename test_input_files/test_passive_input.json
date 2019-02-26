@@ -1,29 +1,29 @@
 {
   "paths": {
     "passive_info": "./test_storage/passive_info.json", 
-    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc", 
+    "swc": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/reconstruction.swc", 
     "up": "./test_storage/upbase.dat", 
     "down": "./test_storage/downbase.dat", 
     "storage_directory": "./test_storage", 
     "preprocess_results": "./test_storage/preprocess_results.json", 
-    "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb", 
+    "nwb": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/ephys.nwb", 
     "fit3": [
-      "./passive_fitting/passive/fixnseg.hoc", 
-      "./passive_fitting/passive/circuit.ses", 
-      "./passive_fitting/passive/params.hoc", 
-      "./passive_fitting/passive/mrf3.ses"
+      "./biophys_optimize/passive/fixnseg.hoc", 
+      "./biophys_optimize/passive/circuit.ses", 
+      "./biophys_optimize/passive/params.hoc", 
+      "./biophys_optimize/passive/mrf3.ses"
     ], 
     "fit2": [
-      "./passive_fitting/passive/fixnseg.hoc", 
-      "./passive_fitting/passive/iclamp.ses", 
-      "./passive_fitting/passive/params.hoc", 
-      "./passive_fitting/passive/mrf2.ses"
+      "./biophys_optimize/passive/fixnseg.hoc", 
+      "./biophys_optimize/passive/iclamp.ses", 
+      "./biophys_optimize/passive/params.hoc", 
+      "./biophys_optimize/passive/mrf2.ses"
     ], 
     "fit1": [
-      "./passive_fitting/passive/fixnseg.hoc", 
-      "./passive_fitting/passive/iclamp.ses", 
-      "./passive_fitting/passive/params.hoc", 
-      "./passive_fitting/passive/mrf.ses"
+      "./biophys_optimize/passive/fixnseg.hoc", 
+      "./biophys_optimize/passive/iclamp.ses", 
+      "./biophys_optimize/passive/params.hoc", 
+      "./biophys_optimize/passive/mrf.ses"
     ]
   }, 
   "task_list": [
