@@ -1,4 +1,7 @@
 *.pyc
 *.csv
 *.png
+build/
+dist/
+biophys_optimize.egg-info
 __pycache__

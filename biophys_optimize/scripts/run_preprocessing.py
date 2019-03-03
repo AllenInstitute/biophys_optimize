@@ -1,7 +1,6 @@
 import argparse
 import pandas as pd
 import os
-
 import argschema as ags
 
 from allensdk.core.nwb_data_set import NwbDataSet
@@ -30,12 +29,15 @@ class PreprocessorParameters(ags.ArgSchema):
 def main():
     """Main sequence of pre-processing and passive fitting"""
 
+    # This argschema package reads arguments from a JSON file
     module = ags.ArgSchemaParser(schema_type=PreprocessorParameters, logger_name=None)
 
-    nwb_path = module.args["paths"]["nwb"]
-    swc_path = module.args["paths"]["swc"]
+    nwb_path = module.args["paths"]["nwb"] # nwb - neurodata without borders (ephys data)
+    swc_path = module.args["paths"]["swc"] # swc - morphology data
     storage_directory = module.args["paths"]["storage_directory"]
 
+    
+    
     try:
         paths, results, passive_info, s1_tasks, s2_tasks = \
             preprocess(data_set=NwbDataSet(nwb_path),
@@ -47,6 +49,7 @@ def main():
     except NoUsableSweepsException as e:
         ju.write(module.args["output_json"], { 'error': e.message })
         return
+
 
     preprocess_results_path = os.path.join(storage_directory, "preprocess_results.json")
     ju.write(preprocess_results_path, results)
