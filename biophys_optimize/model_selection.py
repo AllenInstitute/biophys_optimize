@@ -8,8 +8,8 @@ import pandas as pd
 from pandas import DataFrame, Series
 
 from allensdk.core.nwb_data_set import NwbDataSet
-from utils import Utils
-import sweep_functions as sf
+from biophys_optimize.utils import Utils
+from biophys_optimize import sweep_functions as sf
 
 
 def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,

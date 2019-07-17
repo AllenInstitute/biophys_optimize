@@ -7,8 +7,8 @@ import argschema as ags
 
 class PassiveFittingPaths(ags.schemas.DefaultSchema):
     swc = ags.fields.InputFile(description="path to SWC file")
-    up = ags.fields.InputFile(descritpion="up data path")
-    down = ags.fields.InputFile(descritpion="down data path")
+    up = ags.fields.InputFile(description="up data path")
+    down = ags.fields.InputFile(description="down data path")
     passive_fit_results_file = ags.fields.OutputFile(description="passive fit results file")
     passive_info = ags.fields.Str(description="passive info file")
     fit = ags.fields.List(ags.InputFile, description="list of passive fitting files")
@@ -18,8 +18,11 @@ class PassiveFittingParameters(ags.ArgSchema):
     passive_fit_type = ags.fields.Str(description="passive fit type")
 
 def main():
+
+    
     module = ags.ArgSchemaParser(schema_type=PassiveFittingParameters)
 
+   
     info = ju.read(module.args["paths"]["passive_info"])
     if not info["should_run"]:
         ju.write(module.args["output_json"], { "paths": {} })
@@ -43,9 +46,10 @@ def main():
     else:
         raise Exception("unknown passive fit type: %s" % passive_fit_type)
 
+    
+
     ju.write(results_file, results)
 
     ju.write(module.args["output_json"], { "paths": { passive_fit_type: results_file } })
-
 
 if __name__ == "__main__": main()

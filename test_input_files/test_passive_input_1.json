@@ -1,61 +1,17 @@
 {
   "paths": {
-    "fit": [
-      "/local1/stash/biophys_optimize/biophys_optimize/passive/fixnseg.hoc", 
-      "/local1/stash/biophys_optimize/biophys_optimize/passive/iclamp.ses", 
-      "/local1/stash/biophys_optimize/biophys_optimize/passive/params.hoc", 
-      "/local1/stash/biophys_optimize/biophys_optimize/passive/mrf.ses"
-    ], 
-    "passive_info": "./test_storage/passive_info.json", 
-    "swc": "/projects/mousecelltypes/vol1/prod506/specimen_485835055/Rbp4-Cre_KL100_Ai14-204744.04.01.01_496123897_m.swc", 
-    "up": "./test_storage/upbase.dat", 
-    "passive_fit_results_file": "./test_storage/passive_fit_1_results.json", 
+    "swc": "../GeneralTutorials/AllenSDK/cell_types/specimen_313862022/reconstruction.swc",
+    "up": "./test_storage/upbase.dat",
     "down": "./test_storage/downbase.dat", 
-    "storage_directory": "./test_storage", 
-    "preprocess_results": "./test_storage/preprocess_results.json", 
-    "nwb": "/projects/mousecelltypes/vol1/prod485/Ephys_Roi_Result_485835053/485835053.nwb"
+    "passive_fit_results_file": "./test_storage/passive_fit_1_results.json", 
+    "passive_info": "./test_storage/passive_info.json", 
+    "fit": [
+      "/home/ben/biophys_optimize/biophys_optimize/passive/fixnseg.hoc", 
+      "/home/ben/biophys_optimize/biophys_optimize/passive/iclamp.ses", 
+      "/home/ben/biophys_optimize/biophys_optimize/passive/params.hoc", 
+      "/home/ben/biophys_optimize/biophys_optimize/passive/mrf.ses"
+    ]
   }, 
-  "passive_fit_type": "passive_fit_1", 
-  "task_list": [
-    {
-      "fit_type": "f6", 
-      "seed": 1234
-    }, 
-    {
-      "fit_type": "f12", 
-      "seed": 1234
-    }, 
-    {
-      "fit_type": "f6", 
-      "seed": 1001
-    }, 
-    {
-      "fit_type": "f12", 
-      "seed": 1001
-    }, 
-    {
-      "fit_type": "f6", 
-      "seed": 4321
-    }, 
-    {
-      "fit_type": "f12", 
-      "seed": 4321
-    }, 
-    {
-      "fit_type": "f6", 
-      "seed": 1024
-    }, 
-    {
-      "fit_type": "f12", 
-      "seed": 1024
-    }, 
-    {
-      "fit_type": "f6", 
-      "seed": 2048
-    }, 
-    {
-      "fit_type": "f12", 
-      "seed": 2048
-    }
-  ]
+  "passive_fit_type": "passive_fit_1",
+  "output_json": "passive1_out.json"
 }

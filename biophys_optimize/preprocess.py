@@ -13,8 +13,8 @@ from collections import Counter
 
 from allensdk.config.manifest import Manifest
 
-import check_fi_shift
-import sweep_functions as sf
+from biophys_optimize import check_fi_shift
+from biophys_optimize import sweep_functions as sf
 
 DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
 
@@ -319,7 +319,8 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
 
     # Determine for how long the upward and downward responses are consistent
     grand_diff = (grand_up + grand_down) / grand_up
-    avg_grand_diff = pd.rolling_mean(Series(grand_diff, index=t), 100)
+    #avg_grand_diff = pd.rolling_mean(Series(grand_diff, index=t), 100) #old pandas 
+    avg_grand_diff = Series(grand_diff, index=t).rolling(100).mean() #new pandas
     threshold = 0.2
     start_index = np.flatnonzero(t >= 4.0)[0]
     escape_indexes = np.flatnonzero(np.abs(avg_grand_diff.values[start_index:]) > threshold) + start_index

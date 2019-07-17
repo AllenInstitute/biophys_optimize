@@ -1,0 +1,139 @@
+{
+  "sweeps_to_fit": [
+    58
+  ],
+  "has_apical": true,
+  "v_baseline": -76.31674194335938,
+  "target_features": [
+    {
+      "stdev": 0.05,
+      "name": "slow_trough_norm_t",
+      "mean": 0.3146276230417891
+    },
+    {
+      "stdev": 2.0,
+      "name": "v_baseline",
+      "mean": -76.31674194335938
+    },
+    {
+      "stdev": 2.0,
+      "name": "downstroke_v",
+      "mean": -1.8958330154418945
+    },
+    {
+      "stdev": 0.5,
+      "name": "avg_rate",
+      "mean": 24.0
+    },
+    {
+      "stdev": 0.005,
+      "name": "latency",
+      "mean": 0.0046800000000000175
+    },
+    {
+      "stdev": 2.0,
+      "name": "fast_trough_v",
+      "mean": -57.82551956176758
+    },
+    {
+      "stdev": 0.5,
+      "name": "slow_trough_delta_v",
+      "mean": 1.1328121821085613
+    },
+    {
+      "stdev": 5.0,
+      "name": "upstroke",
+      "mean": 154.73884017976465
+    },
+    {
+      "stdev": 2.0,
+      "name": "trough_v",
+      "mean": -59.05208206176758
+    },
+    {
+      "stdev": 0.0005,
+      "name": "mean_isi",
+      "mean": 0.04134652173913044
+    },
+    {
+      "stdev": 0.0001,
+      "name": "width",
+      "mean": 0.0020412500000000036
+    },
+    {
+      "stdev": 2.0,
+      "name": "peak_v",
+      "mean": 12.588541984558105
+    },
+    {
+      "stdev": 0.001,
+      "name": "adapt",
+      "mean": 0.046961055283351906
+    },
+    {
+      "stdev": 0.001,
+      "name": "first_isi",
+      "mean": 0.017055000000000042
+    },
+    {
+      "stdev": 2.0,
+      "name": "threshold_v",
+      "mean": -47.38411331176758
+    },
+    {
+      "stdev": 5.0,
+      "name": "downstroke",
+      "mean": -29.432389250379696
+    },
+    {
+      "stdev": 2.0,
+      "name": "upstroke_v",
+      "mean": -14.876301765441895
+    },
+    {
+      "stdev": 0.1,
+      "name": "isi_cv",
+      "mean": 0.7327438036937474
+    }
+  ],
+  "junction_potential": -14.0,
+  "is_spiny": true,
+  "stimulus": {
+    "delay": 1000.0,
+    "duration": 1000.0,
+    "amplitude": 0.35000000000000003
+  },
+  "max_stim_test_na": 0.4503749694824219,
+  "sweeps": {
+    "core_1_long_squares": [
+      37,
+      50,
+      49,
+      48,
+      47,
+      45,
+      44,
+      43,
+      41,
+      39,
+      38,
+      36,
+      46,
+      52,
+      51,
+      54,
+      55,
+      56,
+      58
+    ],
+    "seed_2_noise": [],
+    "seed_1_noise": [
+      64,
+      66
+    ],
+    "core_2_long_squares": [],
+    "cap_checks": [
+      69
+    ]
+  }
+}
