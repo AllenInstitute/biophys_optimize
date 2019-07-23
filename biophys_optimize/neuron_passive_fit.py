@@ -179,7 +179,7 @@ def passive_fit_2(up_data, down_data, fit_window_start, fit_window_end,
 
 def passive_fit_elec(up_data, down_data, fit_window_start, fit_window_end,
         bridge, electrode_cap, n_init=10):
-    """ Fit passive properties (Cm, and Rm) with Ri fixed at 100 Ohm-cm
+    """ Fit passive properties (Ri, Cm, and Rm) with simulated recording electrode
 
     Parameters
     ----------
