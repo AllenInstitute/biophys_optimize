@@ -279,7 +279,8 @@ def select_sweeps(sweeps_input, data_set):
     return sweeps_to_fit, start, end
 
 
-def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_directory):
+def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set,
+        storage_directory, threshold=0.2, start_time=4.0):
     """Collect information for passive fit variations on capacitance-check sweeps
 
     Parameters
@@ -294,6 +295,11 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
         container of sweep data
     storage_directory: str
         path to storage directory
+    threshold: float (optional, default 0.2)
+        Fraction that up and down traces can diverge before the fitting window
+        ends
+    start_time: float (optional, default 4.0)
+        Start time (in ms) of passive fitting window
 
     Returns
     -------
@@ -317,33 +323,73 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set, storage_dire
     with open(downfile, 'w') as f:
         np.savetxt(f, np.column_stack((t, grand_down)))
 
-    # Determine for how long the upward and downward responses are consistent
-    grand_diff = (grand_up + grand_down) / grand_up
-    #avg_grand_diff = pd.rolling_mean(Series(grand_diff, index=t), 100) #old pandas 
-    avg_grand_diff = Series(grand_diff, index=t).rolling(100).mean() #new pandas
-    threshold = 0.2
-    start_index = np.flatnonzero(t >= 4.0)[0]
-    escape_indexes = np.flatnonzero(np.abs(avg_grand_diff.values[start_index:]) > threshold) + start_index
-    if len(escape_indexes) < 1:
-        escape_index = len(t) - 1
-    else:
-        escape_index = escape_indexes[0]
-    escape_t = t[escape_index]
-
     paths = {
         "up": upfile,
         "down": downfile,
     }
 
+    escape_time = passive_fit_window(grand_up, grand_down, t, start_time, threshold)
+
     passive_info = {
         "should_run": True,
         "bridge": bridge_avg,
-        "limit": escape_t,
+        "fit_window_start": start_time,
+        "fit_window_end": escape_time,
         "electrode_cap": 1.0,
         "is_spiny": is_spiny,
     }
 
     return paths, passive_info
+
+
+def passive_fit_window(grand_up, grand_down, t, start_time=4.0, threshold=0.2,
+        rolling_average_length=100):
+    """Determine how long the upward and downward responses are consistent
+
+    Parameters
+    ----------
+    grand_up: array
+        Average of positive-going capacitance check voltage responses
+    grand_down: array
+        Average of negative-going capacitance check voltage responses
+    t: array
+        Time points for grand_up and grand_down
+    start_time: float (optional, default 4.0)
+        Start time (in units of t) of passive fitting window
+    threshold: float (optional, default 0.2)
+        Fraction to which up and down traces can diverge before the fitting
+        window ends
+    rolling_average_length: int (optional, default 100)
+        Length (in points) of window for rolling mean for divergence check
+
+    Returns
+    -------
+    escape_time: float
+        Time of divergence greater than `threshold`, or end of trace
+    """
+    # Determine for how long the upward and downward responses are consistent
+    if not len(grand_up) == len(grand_down):
+        raise ValueError("grand_up and grand_down must have the same length")
+    if not len(grand_up) == len(t):
+        raise ValueError("t and grand_up/grand_down must have the same length")
+
+    grand_diff = (grand_up + grand_down) / grand_up
+    start_index = np.flatnonzero(t >= start_time)[0]
+
+    print("start_index", start_index)
+    avg_grand_diff = Series(
+        grand_diff[start_index:], index=t[start_index:]).rolling(rolling_average_length, min_periods=1).mean()
+    print(avg_grand_diff.values)
+    escape_indexes = np.flatnonzero(np.abs(avg_grand_diff.values) > threshold) + start_index
+    if len(escape_indexes) < 1:
+        escape_index = len(t) - 1
+    else:
+        escape_index = escape_indexes[0]
+
+    if escape_index == start_index:
+        raise RuntimeError("The window for passive fitting was found to have zero duration")
+
+    return t[escape_index]
 
 
 def cap_check_grand_averages(sweeps, data_set):
