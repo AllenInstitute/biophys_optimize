@@ -30,7 +30,7 @@ def test_passive_fit_window_full_window():
     assert preprocess.passive_fit_window(grand_up, grand_down, t) == t[-1]
 
 
-def test_passive_fit_window_full_window():
+def test_passive_fit_window_escape():
     n_points = 500
     grand_up = np.ones(n_points)
     grand_down = -grand_up
@@ -39,3 +39,23 @@ def test_passive_fit_window_full_window():
     t = np.arange(n_points)
     assert preprocess.passive_fit_window(grand_up, grand_down, t) >= escape
     assert preprocess.passive_fit_window(grand_up, grand_down, t) < t[-1]
+
+
+def test_passive_fit_window_transient_before_start():
+    n_points = 500
+    grand_up = np.ones(n_points)
+    grand_down = -grand_up
+    escape = 300
+    grand_down[95] = grand_down[95] * 100
+    t = np.arange(n_points)
+    assert preprocess.passive_fit_window(grand_up, grand_down, t, start_time=100) == t[-1]
+
+
+def test_passive_fit_window_transient_after_start():
+    n_points = 500
+    grand_up = np.ones(n_points)
+    grand_down = -grand_up
+    escape = 300
+    grand_down[110] = grand_down[110] * 100
+    t = np.arange(n_points)
+    assert preprocess.passive_fit_window(grand_up, grand_down, t, start_time=100) < t[-1]
