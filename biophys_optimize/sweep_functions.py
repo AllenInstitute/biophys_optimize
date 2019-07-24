@@ -2,11 +2,60 @@
 
 import numpy as np
 from allensdk.ephys.ephys_extractor import EphysSweepSetFeatureExtractor, _step_stim_amp
+from ipfx.sweep import Sweep, SweepSet
+import ipfx.stim_features as stf
+
 
 C1LS_START = 1.02 # seconds
 C1LS_END = 2.02 # seconds
 C2LS_START = 1.02 # seconds
 C2LS_END = 3.02 # seconds
+
+
+def sweeps_from_nwb(nwb_data, sweep_number_list):
+    """ Generate a SweepSet object from an NWB reader and list of sweep numbers
+
+    Sweeps should be in current-clamp mode.
+
+    Parameters
+    ----------
+    nwb_data: NwbReader
+    sweep_number_list: list
+        List of sweep numbers
+
+    Returns
+    -------
+    sweeps: SweepSet
+    stim_start: float
+        Start time of stimulus (seconds)
+    stim_end: float
+        End time of stimulus (seconds)
+    """
+
+    sweep_list = []
+    start = None
+    dur = None
+    for sweep_number in sweep_number_list:
+        sweep_data = nwb_data.get_sweep_data(sweep_number)
+        sampling_rate = sweep_data["sampling_rate"]
+        dt = 1.0 / sampling_rate
+        t = np.arange(0, len(sweep_data["stimulus"])) * dt
+        v = sweep_data["response"]
+        i = sweep_data["stimulus"]
+        sweep = Sweep(t=t,
+                      v=v,
+                      i=i,
+                      sampling_rate=sampling_rate,
+                      sweep_number=sweep_number,
+                      clamp_mode="CurrentClamp",
+                      epochs=None,
+                      )
+        sweep_list.append(sweep)
+        start, dur, _, _, _ = stf.get_stim_characteristics(i, t)
+    if start is None or dur is None:
+        return SweepSet(sweep_list), None, None
+    else:
+        return SweepSet(sweep_list), start, start + dur
 
 
 def get_sweep_v_i_t_from_set(data_set, sweep_number):
