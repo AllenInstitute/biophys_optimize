@@ -1,4 +1,5 @@
 from neuron import h
+import logging
 
 _pc = h.ParallelContext()
 
@@ -15,7 +16,7 @@ def map(func, *iterables):
     results = dict(working())
 
     end_time = pc_time()
-    print "Map took ", end_time - start_time
+    logging.info("Map took {} seconds".format(end_time - start_time))
     return [results[userid] for userid in userids]
 
 

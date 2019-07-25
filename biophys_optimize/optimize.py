@@ -8,8 +8,8 @@ import random
 import json
 import os.path
 from deap import algorithms, base, creator, tools
-from utils import Utils
-import neuron_parallel
+from .utils import Utils
+from . import neuron_parallel
 
 
 # Constants
@@ -34,7 +34,7 @@ def eval_param_set(params):
     utils.set_normalized_parameters(params)
     h.finitialize()
     h.run()
-    
+
     try:
         feature_errors = utils.calculate_feature_errors(t_vec.as_numpy(),
                                                         v_vec.as_numpy(),
@@ -247,13 +247,13 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
         prefix = "{:s}_{:d}_".format(fit_type, seed)
 
         final_pop_path = os.path.join(storage_directory, prefix + "final_pop.txt")
-        np.savetxt(final_pop_path, np.array(map(utils.actual_parameters_from_normalized, pop)))
+        np.savetxt(final_pop_path, np.array(list(map(utils.actual_parameters_from_normalized, pop)), dtype=np.float64))
 
         final_pop_fit_path = os.path.join(storage_directory, prefix + "final_pop_fit.txt")
         np.savetxt(final_pop_fit_path, np.array([ind.fitness.values for ind in pop]))
 
         final_hof_path = os.path.join(storage_directory, prefix + "final_hof.txt")
-        np.savetxt(final_hof_path, np.array(map(utils.actual_parameters_from_normalized, hof)))
+        np.savetxt(final_hof_path, np.array(list(map(utils.actual_parameters_from_normalized, hof)), dtype=np.float64))
 
         final_hof_fit_path = os.path.join(storage_directory, prefix + "final_hof_fit.txt")
         np.savetxt(final_hof_fit_path, np.array([ind.fitness.values for ind in hof]))
