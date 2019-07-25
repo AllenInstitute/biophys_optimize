@@ -3,10 +3,9 @@
 import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
-import re
 import os
-import sys
 import logging
+import warnings
 import yaml
 
 from allensdk.config.manifest import Manifest
@@ -252,12 +251,14 @@ def target_features(sweep_data, spike_data_list, min_std_dict=None):
                 continue
             clip_mask = sd["clipped"].values
             sweep_means.append(sd.loc[~clip_mask, col].mean(skipna=True))
-        mean = np.nanmean(sweep_means)
-        std = np.nanstd(sweep_means)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            mean = np.nanmean(sweep_means)
+            std = np.nanstd(sweep_means)
         if col in min_std_dict:
             std = max(std, min_std_dict[col])
         else:
-            logging.info("Spike column {} did not have a minimum "
+            logging.debug("Spike column {} did not have a minimum "
                 "standard deviation specified".format(col))
         results.append({
             "name": col,
