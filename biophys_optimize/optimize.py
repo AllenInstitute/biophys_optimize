@@ -18,21 +18,18 @@ BOUND_LOWER, BOUND_UPPER = 0.0, 1.0
 DEFAULT_NGEN = 500
 DEFAULT_MU = 1200
 
-# Globals
-stim_params = None
-do_block_check = None
-max_stim_amp = None
+# Globals - can't be used in partial functions with NEURON
+# so cannot be just passed into evaluation function
 utils = None
-h = None
 t_vec = None
 v_vec = None
 i_vec = None
-features = None
-targets = None
 
 
-def eval_param_set(params):
+def eval_param_set(params, do_block_check, max_stim_amp, stim_params,
+        features, targets, t_vec):
     utils.set_normalized_parameters(params)
+    h = utils.h
     h.finitialize()
     h.run()
 
@@ -48,7 +45,7 @@ def eval_param_set(params):
 
     min_fail_penalty = 75.0
     if do_block_check and np.sum(feature_errors) < min_fail_penalty * len(feature_errors):
-        if check_for_block():
+        if check_for_block(max_stim_amp, stim_params):
             feature_errors = min_fail_penalty * np.ones_like(feature_errors)
         # Reset the stimulus back
         utils.set_iclamp_params(stim_params["amplitude"], stim_params["delay"],
@@ -57,9 +54,10 @@ def eval_param_set(params):
     return [np.sum(feature_errors)]
 
 
-def check_for_block():
+def check_for_block(max_stim_amp, stim_params):
     utils.set_iclamp_params(max_stim_amp, stim_params["delay"],
         stim_params["duration"])
+    h = utils.h
     h.finitialize()
     h.run()
 
@@ -121,8 +119,10 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
              ngen, seed, mu,
              storage_directory,
              starting_population=None):
-    global stim_params, do_block_check, max_stim_amp, utils, h
-    global v_vec, i_vec, t_vec, features, targets
+    # need to be global since cannot pass via partial functions to
+    # parallel NEURON mapping function
+    global utils
+    global v_vec, i_vec, t_vec
 
     features = fit_style_data["features"]
     targets = preprocess_results["target_features"]
@@ -134,6 +134,8 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
         if max_stim_amp <= stim_params["amplitude"]:
             print("Depol block check not necessary")
             do_block_check = False
+    else:
+        max_stim_amp = None
 
     environment = NeuronEnvironment(hoc_files, compiled_mod_library)
     utils = Utils()
@@ -178,7 +180,13 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
         toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.attr_float)
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-        toolbox.register("evaluate", eval_param_set)
+        toolbox.register("evaluate", eval_param_set,
+            do_block_check=do_block_check,
+            max_stim_amp=max_stim_amp,
+            stim_params=stim_params,
+            features=features,
+            targets=targets
+            )
         toolbox.register("mate", tools.cxSimulatedBinaryBounded, low=BOUND_LOWER, up=BOUND_UPPER,
             eta=eta)
         toolbox.register("mutate", tools.mutPolynomialBounded, low=BOUND_LOWER, up=BOUND_UPPER,
@@ -267,7 +275,6 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
                 "final_hof_fit_path": final_hof_fit_path,
             }
         }
-
 
         neuron_parallel.done()
 
