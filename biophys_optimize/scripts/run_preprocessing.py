@@ -155,7 +155,7 @@ def main(paths, sweeps, dendrite_type, bridge_avg, passive_fit_start_time,
             "delay": 1e3,
             "duration": 1e3 * stim_dur, # to ms
         },
-        "target_features": target_info.reset_index().to_dict(orient="records"),
+        "target_features": target_info.to_dict(orient="index"),
         "sweeps": sweeps,
         "sweeps_to_fit": [s.sweep_number for s in sweep_set_to_fit.sweeps],
     })
