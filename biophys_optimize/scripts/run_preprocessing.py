@@ -4,8 +4,9 @@ import os
 import argschema as ags
 
 import allensdk.core.json_utilities as ju
-from ipfx.nwb_reader import nwb_reader
+from ipfx.nwb_reader import create_nwb_reader
 import biophys_optimize.preprocess as preprocess
+from biophys_optimize.step_analysis import StepAnalysis
 from biophys_optimize.sweep_functions import sweeps_from_nwb
 
 
@@ -14,6 +15,7 @@ class PreprocessorPaths(ags.schemas.DefaultSchema):
     swc = ags.fields.InputFile(description="path to input SWC (morphology) file")
     storage_directory = ags.fields.OutputDir(description="path to storage directory")
 
+
 class PreprocessorSweeps(ags.schemas.DefaultSchema):
     core_1_long_squares = ags.fields.List(ags.fields.Int, description="list of core 1 long square sweep numbers")
     core_2_long_squares = ags.fields.List(ags.fields.Int, description="list of core 2 long square sweep numbers")
@@ -21,12 +23,12 @@ class PreprocessorSweeps(ags.schemas.DefaultSchema):
     seed_2_noise = ags.fields.List(ags.fields.Int, description="list of seed 2 noise sweep numbers")
     cap_checks = ags.fields.List(ags.fields.Int, description="list of capacitance check sweep numbers")
 
+
 class PreprocessorParameters(ags.ArgSchema):
     paths = ags.fields.Nested(PreprocessorPaths)
-    dendrite_type_tag = ags.fields.Str(description="dendrite type tag")
+    dendrite_type = ags.fields.Str(description="dendrite type (spiny or aspiny)")
     sweeps = ags.fields.Nested(PreprocessorSweeps)
     bridge_avg = ags.fields.Float(description="average bridge balance")
-
 
 
 def main(paths, sweeps, dendrite_type, bridge_avg, output_json, **kwargs):
@@ -34,24 +36,28 @@ def main(paths, sweeps, dendrite_type, bridge_avg, output_json, **kwargs):
 
     # Extract Sweep objects (from IPFX package) from NWB file
     nwb_path = paths["nwb"] # nwb - neurodata without borders (ephys data)
-    nwb_data = nwb_reader(nwb_path)
+    nwb_data = create_nwb_reader(nwb_path)
     core_1_lsq, c1_start, c1_end = sweeps_from_nwb(
         nwb_data, sweeps["core_1_long_squares"])
     core_2_lsq, c2_start, c2_end = sweeps_from_nwb(
         nwb_data, sweeps["core_2_long_squares"])
 
     # Choose sweeps to train the model
-    sweeps_to_fit, start, end = preprocess.select_core_1_or_core_2_sweeps(
+    sweep_set_to_fit, start, end = preprocess.select_core_1_or_core_2_sweeps(
         core_1_lsq, c1_start, c1_end,
         core_2_lsq, c2_start, c2_end)
-    if len(sweeps_to_fit) == 0:
+    if len(sweep_set_to_fit.sweeps) == 0:
         ju.write(output_json, { 'error': "No usable sweeps found" })
         return
 
     # Calculate the target features from the training sweeps
+    step_analysis = StepAnalysis(start, end)
+    step_analysis.analyze(sweep_set_to_fit)
+    target_info = preprocess.target_features(
+        step_analysis.sweep_features(),
+        step_analysis.spikes_data())
 
-
-    # Prepare for the passive fitting step
+    # Prepare for passive fitting
 
 
     swc_path = paths["swc"] # swc - morphology data
@@ -59,14 +65,14 @@ def main(paths, sweeps, dendrite_type, bridge_avg, output_json, **kwargs):
 
     try:
         paths, results, passive_info, s1_tasks, s2_tasks = \
-            preprocess(data_set=,
+            preprocess(data_set=None,
                        swc_data=pd.read_table(swc_path, sep='\s+', comment='#', header=None),
                        dendrite_type_tag=module.args["dendrite_type_tag"],
                        sweeps=module.args["sweeps"],
                        bridge_avg=module.args["bridge_avg"],
                        storage_directory=storage_directory)
     except NoUsableSweepsException as e:
-
+        pass
 
 
     preprocess_results_path = os.path.join(storage_directory, "preprocess_results.json")

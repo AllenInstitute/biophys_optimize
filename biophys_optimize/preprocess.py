@@ -11,8 +11,10 @@ import yaml
 
 from allensdk.config.manifest import Manifest
 
-import .check_fi_shift as check_fi_shift
-import .sweep_functions as sf
+from . import check_fi_shift
+from . import sweep_functions as sf
+from .step_analysis import StepAnalysis
+from ipfx.sweep import SweepSet
 
 
 DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
@@ -86,6 +88,7 @@ def select_core1_trace(sweep_set, start, end,
     step_analysis.analyze(sweep_set)
     sweep_info = step_analysis.sweep_features()
     quality_values = [is_sweep_good_quality(sd["threshold_t"].values, start, end)
+                      if sd.shape[0] > 0 else False
                       for sd in step_analysis.spikes_data()]
     sweep_info["quality"] = quality_values
 
@@ -93,8 +96,8 @@ def select_core1_trace(sweep_set, start, end,
     spiking_amps = spiking_features[spiking_features["stim_amp"] > 0].sort_values("stim_amp")
     if spiking_amps.empty:
         raise RuntimeError("Cannot find rheobase sweep")
-    rheobase_amp = spiking_amps.iloc[0]
-    unique_amps = np.unique(np.rint(spiking_amps.values))
+    rheobase_amp = spiking_amps["stim_amp"].values[0]
+    unique_amps = np.unique(np.rint(spiking_amps["stim_amp"].values))
 
     sweep_to_use_mean_isi_cv = 1e12
     sweeps_to_use = []
@@ -111,7 +114,7 @@ def select_core1_trace(sweep_set, start, end,
             sweeps_to_use = np.array(sweep_set.sweeps)[mask][quality].tolist()
             sweep_to_use_mean_isi_cv = isi_cv.mean()
 
-    if len(sweep_to_use) == 0:
+    if len(sweeps_to_use) == 0:
         logging.info("Could not find appropriate core 1 sweep!")
         return []
     else:
@@ -187,42 +190,82 @@ def has_pause(isis):
 
 
 def target_features(sweep_data, spike_data_list, min_std_dict=None):
-    """Determine target features from sweeps in set extractor"""
-    ext.process_spikes()
-    for swp in ext.sweeps():
-        swp.sweep_feature("v_baseline") # Pre-compute all the baselines, too
-        swp.process_new_spike_feature("slow_trough_norm_t",
-                                      sf.slow_trough_norm_t,
-                                      affected_by_clipping=True)
-        swp.process_new_spike_feature("slow_trough_delta_v",
-                                      sf.slow_trough_delta_voltage_feature,
-                                      affected_by_clipping=True)
+    """Determine target feature means and standard deviations
 
+    Can use a minimum standard deviation to avoid over-weighting certain features
+    that have extremely small variance.
 
-    sweep_keys = swp.sweep_feature_keys()
-    spike_keys = swp.spike_feature_keys()
+    Parameters
+    ----------
+    sweep_data: DataFrame
+        Rows have values for each sweep
+    spike_data_list: list
+        DataFrames of individual spike values for each sweep
+    min_std_dict: dict (optional)
+        If not supplied, values will be loaded from default YAML file
+
+    Returns
+    -------
+    DataFrame of target feature means and standard deviations
+    """
 
     if min_std_dict is None:
         # Load from default configuration file if not supplied
         with open(os.path.join(os.path.dirname(__file__), '../config/minimum_feature_standard_deviations.yaml')) as f:
-            min_std_dict = yaml.load(f)
+            min_std_dict = yaml.load(f, Loader=yaml.Loader)
 
-    target_features = []
-    for k in min_std_dict:
-        if k in sweep_keys:
-            values = ext.sweep_features(k)
-        elif k in spike_keys:
-            values = ext.spike_feature_averages(k)
-        else:
-            logging.debug("Could not find feature %s", k)
+    # Sweep-level features
+    exclude = ["stim_amp"]
+    results = []
+    sweep_cols = sweep_data.select_dtypes(include=[np.number]).columns.tolist()
+    for col in sweep_cols:
+        if col in exclude:
             continue
+        mean = sweep_data[col].mean(skipna=True)
+        std = sweep_data[col].std(skipna=True)
+        if sweep_data.shape[0] == 1:
+            std = 0
+        if col in min_std_dict:
+            std = max(std, min_std_dict[col])
+        else:
+            logging.debug("Sweep column {} did not have a minimum "
+                "standard deviation specified".format(col))
+        results.append({
+            "name": col,
+            "mean": mean,
+            "stdev": std,
+        })
 
-        t = {"name": k, "mean": float(values.mean()), "stdev": float(values.std())}
-        if min_std_dict[k] > t["stdev"]:
-            t["stdev"] = min_std_dict[k]
-        target_features.append(t)
+    # Spike-level features
+    all_cols = []
+    for spike_data in spike_data_list:
+        all_cols += spike_data.select_dtypes(include=[np.number]).columns.tolist()
+    all_cols = np.unique(all_cols)
 
-    return target_features
+    exclude_suffixes = ["_index", "_i", "_t"]
+    for col in all_cols:
+        if np.any([col.endswith(s) for s in exclude_suffixes]):
+            continue
+        sweep_means = []
+        for sd in spike_data_list:
+            if col not in sd:
+                continue
+            clip_mask = sd["clipped"].values
+            sweep_means.append(sd.loc[~clip_mask, col].mean(skipna=True))
+        mean = np.nanmean(sweep_means)
+        std = np.nanstd(sweep_means)
+        if col in min_std_dict:
+            std = max(std, min_std_dict[col])
+        else:
+            logging.info("Spike column {} did not have a minimum "
+                "standard deviation specified".format(col))
+        results.append({
+            "name": col,
+            "mean": mean,
+            "stdev": std,
+        })
+
+    return DataFrame(results).set_index("name")
 
 
 def select_core_1_or_core_2_sweeps(
@@ -288,6 +331,9 @@ def select_core_1_or_core_2_sweeps(
         sweeps_by_amp = {}
         for amp, swp, spike_data in zip(stim_amps, core_2_lsq.sweeps,
                 core2_analysis.spikes_data()):
+            if spike_data.shape[0] == 0:
+                continue
+
             spike_times = spike_data["threshold_t"].values
             if is_sweep_good_quality(spike_times, core_2_start, core_2_end):
                 if amp in n_good:

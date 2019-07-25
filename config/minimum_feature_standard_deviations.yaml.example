@@ -4,7 +4,7 @@ peak_v: 2.0 # mV
 trough_v: 2.0 # mV
 fast_trough_v: 2.0 # mV
 slow_trough_delta_v: 0.5 # mV
-slow_trough_norm_t: 0.05
+slow_trough_norm_time: 0.05
 latency: 0.005 # s
 isi_cv: 0.1
 mean_isi: 0.005 # s
