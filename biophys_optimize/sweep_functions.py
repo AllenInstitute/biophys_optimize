@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 from ipfx.sweep import Sweep, SweepSet
 import ipfx.stim_features as stf
