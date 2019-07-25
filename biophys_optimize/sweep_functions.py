@@ -48,3 +48,32 @@ def sweeps_from_nwb(nwb_data, sweep_number_list):
     else:
         return SweepSet(sweep_list), start, start + dur
 
+
+def sweep_set_for_model(t, v, i):
+    """Generate a SweepSet object based on a single model sweep
+
+    Parameters
+    ----------
+    t: array
+        Time data (seconds)
+    v: array
+        Voltage data
+    i: array
+        Current stimulus data
+
+    Returns
+    -------
+    SweepSet containing one Sweep
+    """
+    sampling_rate = 1 / (t[1] - t[0])
+    sweep = Sweep(t=t,
+                  v=v,
+                  i=i,
+                  sampling_rate=sampling_rate,
+                  sweep_number=None,
+                  clamp_mode="CurrentClamp",
+                  epochs=None,
+                  )
+    return SweepSet([sweep])
+
+
