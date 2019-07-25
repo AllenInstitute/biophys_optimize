@@ -16,9 +16,6 @@ from .step_analysis import StepAnalysis
 from ipfx.sweep import SweepSet
 
 
-DEFAULT_SEEDS = [1234, 1001, 4321, 1024, 2048]
-
-
 class NoUsableSweepsException(Exception): pass
 
 
@@ -68,7 +65,7 @@ class FitStyle():
         return  FitStyle.FIT_STAGE_MAP[stage_1]
 
 
-def get_cap_check_indices(i):
+def _cap_check_indices(i):
     """Find the indices of the upward and downward pulses in the current trace `i`
 
     Assumes that there is a test pulse followed by the stimulus pulses (downward first)
@@ -77,7 +74,7 @@ def get_cap_check_indices(i):
     up_idx = np.flatnonzero(di > 0)
     down_idx = np.flatnonzero(di < 0)
 
-    return up_idx[2::2], down_idx[1::2]
+    return up_idx[2::2].tolist(), down_idx[1::2].tolist()
 
 
 def select_core1_trace(sweep_set, start, end,
@@ -396,14 +393,6 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set,
 
     grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
 
-    # Save to local storage to be loaded by NEURON fitting scripts
-    Manifest.safe_mkdir(storage_directory)
-    upfile = os.path.join(storage_directory, "upbase.dat")
-    downfile = os.path.join(storage_directory, "downbase.dat")
-    with open(upfile, 'w') as f:
-        np.savetxt(f, np.column_stack((t, grand_up)))
-    with open(downfile, 'w') as f:
-        np.savetxt(f, np.column_stack((t, grand_down)))
 
     paths = {
         "up": upfile,
@@ -422,6 +411,20 @@ def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set,
     }
 
     return paths, passive_info
+
+
+def save_grand_averages(grand_up, grand_down, t, storage_directory):
+    """Save to local storage to be loaded by NEURON fitting scripts"""
+    Manifest.safe_mkdir(storage_directory)
+    upfile = os.path.join(storage_directory, "upbase.dat")
+    downfile = os.path.join(storage_directory, "downbase.dat")
+    with open(upfile, 'w') as f:
+        np.savetxt(f, np.column_stack((t, grand_up)))
+    with open(downfile, 'w') as f:
+        np.savetxt(f, np.column_stack((t, grand_down)))
+
+    return upfile, downfile
+
 
 
 def passive_fit_window(grand_up, grand_down, t, start_time=4.0, threshold=0.2,
@@ -458,10 +461,8 @@ def passive_fit_window(grand_up, grand_down, t, start_time=4.0, threshold=0.2,
     grand_diff = (grand_up + grand_down) / grand_up
     start_index = np.flatnonzero(t >= start_time)[0]
 
-    print("start_index", start_index)
     avg_grand_diff = Series(
         grand_diff[start_index:], index=t[start_index:]).rolling(rolling_average_length, min_periods=1).mean()
-    print(avg_grand_diff.values)
     escape_indexes = np.flatnonzero(np.abs(avg_grand_diff.values) > threshold) + start_index
     if len(escape_indexes) < 1:
         escape_index = len(t) - 1
@@ -474,56 +475,52 @@ def passive_fit_window(grand_up, grand_down, t, start_time=4.0, threshold=0.2,
     return t[escape_index]
 
 
-def cap_check_grand_averages(sweeps, data_set):
+def cap_check_grand_averages(sweep_set, extra_interval=2.0):
     """Average and baseline identical sections of capacitance check sweeps
 
     Parameters
     ----------
-    sweeps: list
-        list of sweep numbers of capacitance check sweeps
-    data_set: NwbDataSet
-        container of sweep data
+    sweep_set: SweepSet
+
+    extra_interval: float (optional, default 2.0)
+        Extra time prior to stimulus to include in average
 
     Returns
     -------
-    grand_up: ndarray
-    grand_down: ndarray
+    grand_up: array
+    grand_down: array
         Averages of responses to depolarizing (`grand_up`) and hyperpolarizing
         (`grand_down`) pulses
-    t: ndarray
+    t: array
         Time data for grand_up and grand_down in ms
     """
-    initialized = False
-    for s in sweeps:
-        v, i, t = sf.get_sweep_v_i_t_from_set(data_set, s)
-        passive_delta_t = (t[1] - t[0]) * 1e3 # in ms
+    grand_up_list = []
+    grand_down_list = []
+    for swp in sweep_set.sweeps:
+        passive_delta_t = (swp.t[1] - swp.t[0]) * 1e3 # in ms
         extra_interval = 2. # ms
         extra = int(extra_interval / passive_delta_t)
-        up_idxs, down_idxs = get_cap_check_indices(i)
+        up_idxs, down_idxs = _cap_check_indices(swp.i)
 
-        down_idx_interval = down_idxs[1] - down_idxs[0]
         inter_stim_interval = up_idxs[0] - down_idxs[0]
-        for j in range(len(up_idxs)):
-            if j == 0:
-                avg_up = v[(up_idxs[j] - extra):down_idxs[j + 1]]
-                avg_down = v[(down_idxs[j] - extra):up_idxs[j]]
-            elif j == len(up_idxs) - 1:
-                avg_up = avg_up + v[(up_idxs[j] - extra):up_idxs[j] + inter_stim_interval]
-                avg_down = avg_down + v[(down_idxs[j] - extra):up_idxs[j]]
-            else:
-                avg_up = avg_up + v[(up_idxs[j] - extra):down_idxs[j + 1]]
-                avg_down = avg_down + v[(down_idxs[j] - extra):up_idxs[j]]
-        avg_up /= len(up_idxs)
-        avg_down /= len(up_idxs)
-        if not initialized:
-            grand_up = avg_up - avg_up[0:extra].mean()
-            grand_down = avg_down - avg_down[0:extra].mean()
-            initialized = True
-        else:
-            grand_up = grand_up + (avg_up - avg_up[0:extra].mean())
-            grand_down = grand_down + (avg_down - avg_down[0:extra].mean())
-    grand_up /= len(sweeps)
-    grand_down /= len(sweeps)
+        down_idxs.append(up_idxs[-1] + inter_stim_interval)
+
+        avg_up_list = []
+        avg_down_list = []
+        for down_start, down_end, up_start, up_end in zip(
+            down_idxs[:-1], up_idxs, up_idxs, down_idxs[1:]):
+            avg_down = swp.v[(down_start - extra):down_end]
+            avg_up = swp.v[(up_start - extra):up_end]
+            avg_down_list.append(avg_down)
+            avg_up_list.append(avg_up)
+        avg_up = np.vstack(avg_up_list).mean(axis=0)
+        avg_down = np.vstack(avg_down_list).mean(axis=0)
+
+        grand_up_list.append(avg_up - avg_up[0:extra].mean())
+        grand_down_list.append(avg_down - avg_down[0:extra].mean())
+
+    grand_up = np.vstack(grand_up_list).mean(axis=0)
+    grand_down = np.vstack(grand_down_list).mean(axis=0)
     t = passive_delta_t * np.arange(len(grand_up)) # in ms
 
     return grand_up, grand_down, t
@@ -555,86 +552,16 @@ def max_i_for_depol_block_check(*sweep_set_args):
     return max_i
 
 
-def preprocess(data_set, swc_data, dendrite_type_tag,
-               sweeps, bridge_avg, storage_directory,
-               seeds=DEFAULT_SEEDS, jxn=-14.0):
-    """ Perform preprocessing tasks prior to passive fitting and optimization
+def swc_has_apical_compartments(swc_file):
+    """ Returns whether SWC file has any apical dendrite compartments"""
 
-    Parameters
-    ----------
-    data_set: AibsDataSet
-    swc_data: dataframe
-    dendrite_type_tag: str
-    sweeps: dict
-    bridge_avg: float
-    storage_directory: str
-    seeds: list
-    jxn: float (optional, default -14.0)
+    # Reading data into dataframe since we don't need a full, connected
+    # Morphology object
+    swc_data = pd.read_csv(swc_file, sep='\s+', comment='#', header=None)
 
-    Returns
-    -------
+    # SWC file conventions
+    apical_code = 4
+    compartment_type_column = 1
 
-    """
-
-    # TODO - Change this from a long string check
-    if dendrite_type_tag == "dendrite type - aspiny":
-        is_spiny = False
-        logging.debug("is not spiny")
-    else:
-        is_spiny = True
-        logging.debug("is spiny or sparsely spiny")
-
-    # Check for fi curve shift to decide to use core1 or core2
-
-    paths, passive_info = prepare_for_passive_fit(sweeps["cap_checks"],
-                                                  bridge_avg,
-                                                  is_spiny, data_set,
-                                                  storage_directory)
-
-    ext = sf.sweep_set_extractor_from_list(sweeps_to_fit, data_set, start, end, jxn=jxn)
-    targets = target_features(ext)
-    max_i = max_i_for_depol_block_check(sweeps, data_set)
-
-    # Decide which fit(s) we are doing
-    width = [target["mean"] for target in targets if target["name"] == "width"][0]
-
-    has_apical = False
-    if 4 in pd.unique(swc_data[1]):
-        has_apical = True
-        logging.debug("Has apical dendrite")
-    else:
-        logging.debug("Does not have apical dendrite")
-
-
-    fit_types = FitStyle.get_fit_types(has_apical=has_apical,
-                                       is_spiny=is_spiny,
-                                       width=width)
-
-    stage_1_tasks = [{"fit_type": fit_type, "seed": seed} for seed in seeds
-            for fit_type in fit_types]
-
-    stage_2_tasks = [{"fit_type": FitStyle.map_stage_2(fit_type), "seed": seed} for seed in seeds
-            for fit_type in fit_types]
-
-    swp = ext.sweeps()[0]
-    stim_amp = swp.sweep_feature("stim_amp")
-    stim_dur = swp.end - swp.start
-
-    v_baseline = [target["mean"] for target in targets if target["name"] == "v_baseline"][0]
-
-    return paths, {
-        "is_spiny": is_spiny,
-        "has_apical": has_apical,
-        "sweeps_to_fit": sweeps_to_fit.tolist(),
-        "junction_potential": jxn,
-        "max_stim_test_na": max_i,
-        "v_baseline": v_baseline,
-        "stimulus": {
-            "amplitude": 1e-3 * stim_amp,
-            "delay": 1e3,
-            "duration": 1e3 * stim_dur,
-        },
-        "target_features": targets,
-        "sweeps": sweeps,
-    }, passive_info, stage_1_tasks, stage_2_tasks
+    return apical_code in swc_data[compartment_type_column].unique().tolist()
 
