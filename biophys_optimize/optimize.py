@@ -9,6 +9,7 @@ import json
 import os.path
 from deap import algorithms, base, creator, tools
 from .utils import Utils
+from .environment import NeuronEnvironment
 from . import neuron_parallel
 
 
@@ -134,8 +135,8 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
             print("Depol block check not necessary")
             do_block_check = False
 
-    utils = Utils(hoc_files,
-                  compiled_mod_library)
+    environment = NeuronEnvironment(hoc_files, compiled_mod_library)
+    utils = Utils()
     h = utils.h
 
     utils.generate_morphology(morphology_path)

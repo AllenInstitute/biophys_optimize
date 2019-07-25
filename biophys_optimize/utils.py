@@ -6,12 +6,8 @@ from . import sweep_functions as sf
 from neuron import h
 
 class Utils:
-    def __init__(self, hoc_files_to_load, mod_library_path):
+    def __init__(self):
         self.h = h
-        if mod_library_path:
-            self.h.nrn_load_dll(mod_library_path.encode('ascii', 'ignore'))
-        for file in hoc_files_to_load:
-            self.h.load_file(file.encode('ascii', 'ignore'))
         self.stim = None
         self.stim_curr = None
         self.sampling_rate = None
