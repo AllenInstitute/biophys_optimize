@@ -6,3 +6,4 @@ build/
 dist/
 biophys_optimize.egg-info
 __pycache__
+x86_64/
