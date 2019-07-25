@@ -1,12 +1,11 @@
 import numpy as np
 import logging
-from allensdk.ephys.ephys_extractor import EphysSweepFeatureExtractor
-import sweep_functions as sf
+from ipfx import feature_extractor as fx
+from .step_analysis import StepAnalysis
+from . import sweep_functions as sf
 from neuron import h
 
 class Utils:
-    _log = logging.getLogger(__name__)
-
     def __init__(self, hoc_files_to_load, mod_library_path):
         self.h = h
         if mod_library_path:
@@ -81,7 +80,7 @@ class Utils:
         for i, p in enumerate(params):
             c = channels_and_others[i]
             if p > 1.0 or p < 0.0:
-                print "WARNING: Setting a normalized parameter with a value outside [0, 1] ({:s} set to {:f})".format(c, p)
+                logging.warning("WARNING: Setting a normalized parameter with a value outside [0, 1] ({:s} set to {:f})".format(c, p))
             value = p * (c["max"] - c["min"]) + c["min"]
             sections = [s for s in self.cell.all if s.name().split(".")[1][:4] == c["section"]]
             for sec in sections:
@@ -111,12 +110,12 @@ class Utils:
         return normalized_params.tolist()
 
     def actual_parameters_from_normalized(self, params):
-        actual_params = []
         channels_and_others = self.channels + self.addl_params
-        for i, p in enumerate(params):
-            c = channels_and_others[i]
-            value = p * (c["max"] - c["min"]) + c["min"]
-            actual_params.append(value)
+        actual_params = [(p *
+            (channels_and_others[i]["max"] -
+            channels_and_others[i]["min"]) +
+            channels_and_others[i]["min"])
+            for i, p in enumerate(params)]
         return actual_params
 
     def insert_iclamp(self):
@@ -147,33 +146,28 @@ class Utils:
         if np.abs(v[-1] - v[:start_index].mean()) > 2.0:
             fail_trace = True
         else:
-            pre_swp = EphysSweepFeatureExtractor(t, v, i, start=0, end=delay)
-            pre_swp.process_spikes()
-            if pre_swp.sweep_feature("avg_rate") > 0:
-                fail_trace = True
+            pre_swp = fx.SpikeFeatureExtractor(start=0, end=delay)
+            pre_spike_df = pre_swp.process(t, v, i)
 
-        target_features_dict = {f["name"]: {"mean": f["mean"], "stdev": f["stdev"]} for f in targets}
+            if pre_spike_df.shape[0] > 0:
+                fail_trace = True
 
         if not fail_trace:
-            swp = EphysSweepFeatureExtractor(t, v, i, start=delay, end=delay + duration)
-            swp.process_spikes()
-            swp.sweep_feature("v_baseline") # Pre-compute the baseline
-            swp.process_new_spike_feature("slow_trough_norm_t",
-                                          sf.slow_trough_norm_t,
-                                          affected_by_clipping=True)
-            swp.process_new_spike_feature("slow_trough_delta_v",
-                                          sf.slow_trough_delta_voltage_feature,
-                                          affected_by_clipping=True)
-            sweep_keys = swp.sweep_feature_keys()
-            spike_keys = swp.spike_feature_keys()
+            model_sweep_set = sf.sweep_set_for_model(t, v, i)
+            step_analysis = StepAnalysis(start=delay, end=delay + duration)
+            step_analysis.analyze(model_sweep_set)
 
-            if len(swp.spike_feature("threshold_t")) < minimum_num_spikes: # Enough spikes?
+            spike_data = step_analysis.spikes_data()[0]
+            sweep_data = step_analysis.sweep_features()
+
+            if spike_data.shape[0] < minimum_num_spikes: # Enough spikes?
                 fail_trace = True
             else:
-                avg_per_spike_peak_error = np.mean([abs(peak_v - target_features_dict["peak_v"]["mean"])
-                                                    for peak_v in swp.spike_feature("peak_v")])
-                avg_overall_error = abs(target_features_dict["peak_v"]["mean"] -
-                                        swp.spike_feature("peak_v").mean())
+                avg_per_spike_peak_error = np.abs(
+                    spike_data["peak_v"].values -
+                    targets["peak_v"]["mean"]).mean()
+                avg_overall_error = abs(targets["peak_v"]["mean"] -
+                                        spike_data["peak_v"].mean())
                 if avg_per_spike_peak_error > 3. * avg_overall_error: # Weird bi-modality of spikes; 3.0 is arbitrary
                     fail_trace = True
 
@@ -186,19 +180,19 @@ class Utils:
         else:
             errs = []
             for k in feature_names:
-                if k in sweep_keys:
-                    model_mean = swp.sweep_feature(k)
-                elif k in spike_keys:
-                    model_mean = swp.spike_feature(k).mean()
+                if k in sweep_data:
+                    model_mean = sweep_data[k].values[0]
+                elif k in spike_data:
+                    model_mean = spike_data[k].mean(skipna=True)
                 else:
-                    _log.debug("Could not find feature %s", k)
+                    logging.debug("Could not find feature %s", k)
                     errs.append(missing_penalty_value)
                     continue
                 if np.isnan(model_mean):
                     errs.append(missing_penalty_value)
                 else:
-                    target_mean = target_features_dict[k]['mean']
-                    target_stdev = target_features_dict[k]['stdev']
+                    target_mean = targets[k]['mean']
+                    target_stdev = targets[k]['stdev']
                     errs.append(np.abs((model_mean - target_mean) / target_stdev))
             errs = np.array(errs)
         return errs
@@ -208,23 +202,19 @@ class Utils:
         duration = self.stim.dur * 1e-3
         t = t_ms * 1e-3
 
-        swp = EphysSweepFeatureExtractor(t, v, i, start=delay, end=delay + duration)
-        swp.process_spikes()
-        swp.sweep_feature("v_baseline") # Pre-compute the baseline
-        swp.process_new_spike_feature("slow_trough_norm_t",
-                                      sf.slow_trough_norm_t,
-                                      affected_by_clipping=True)
-        swp.process_new_spike_feature("slow_trough_delta_v",
-                                      sf.slow_trough_delta_voltage_feature,
-                                      affected_by_clipping=True)
-        sweep_keys = swp.sweep_feature_keys()
-        spike_keys = swp.spike_feature_keys()
+        model_sweep_set = sf.sweep_set_for_model(t, v, i)
+        step_analysis = StepAnalysis(start=delay, end=delay + duration)
+        step_analysis.analyze(model_sweep_set)
+
+        spike_data = step_analysis.spikes_data()[0]
+        sweep_data = step_analysis.sweep_features()
+
         out_features = []
         for k in feature_names:
-            if k in sweep_keys:
-                out_features.append(swp.sweep_feature(k))
-            elif k in spike_keys:
-                out_features.append(swp.spike_feature(k).mean())
+            if k in sweep_data:
+                out_features.append(sweep_data[k].values[0])
+            elif k in spike_data:
+                out_features.append(spike_data[k].mean(skipna=True))
             else:
                 out_features.append(np.nan)
         return np.array(out_features)
@@ -239,3 +229,4 @@ class Utils:
         t_vec.record(self.h._ref_t)
 
         return v_vec, i_vec, t_vec
+

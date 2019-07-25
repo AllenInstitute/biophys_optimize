@@ -1,6 +1,7 @@
 import argparse
 from biophys_optimize.optimize import optimize
 import allensdk.core.json_utilities as ju
+import logging
 
 import argschema as ags
 
@@ -28,20 +29,20 @@ def main():
     passive_results = ju.read(module.args["paths"]["passive_results"])
     fit_style_data = ju.read(module.args["paths"]["fit_style"])
 
-    results = optimize(hoc_files=module.args["paths"]["hoc_files"], 
-                       compiled_mod_library=module.args["paths"]["compiled_mod_library"], 
-                       morphology_path=module.args["paths"]["swc"], 
-                       preprocess_results=preprocess_results, 
-                       passive_results=passive_results, 
-                       fit_type=module.args["fit_type"], 
+    results = optimize(hoc_files=module.args["paths"]["hoc_files"],
+                       compiled_mod_library=module.args["paths"]["compiled_mod_library"],
+                       morphology_path=module.args["paths"]["swc"],
+                       preprocess_results=preprocess_results,
+                       passive_results=passive_results,
+                       fit_type=module.args["fit_type"],
                        fit_style_data=fit_style_data,
-                       seed=module.args["seed"], 
-                       ngen=module.args["ngen"], 
-                       mu=module.args["mu"],    
+                       seed=module.args["seed"],
+                       ngen=module.args["ngen"],
+                       mu=module.args["mu"],
                        storage_directory = module.args["paths"]["storage_directory"],
                        starting_population = module.args["paths"].get("starting_population",None))
 
-    print "writing output"
+    logging.info("Writing optimization output")
     ju.write(module.args["output_json"], results)
 
 if __name__ == "__main__": main()

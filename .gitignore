@@ -1,6 +1,7 @@
 *.pyc
 *.csv
 *.png
+*.yaml
 build/
 dist/
 biophys_optimize.egg-info
