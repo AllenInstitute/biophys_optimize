@@ -57,8 +57,22 @@ def main(paths, sweeps, dendrite_type, bridge_avg, output_json, **kwargs):
         step_analysis.sweep_features(),
         step_analysis.spikes_data())
 
-    # Prepare for passive fitting
 
+    # Determine maximum current used for depolarization block checks
+    # during optimization
+
+    # Loading noise sweeps to check highest current used
+    noise_1, _, _ = sweeps_from_nwb(
+        nwb_data, sweeps["seed_1_noise"])
+    noise_2, _, _ = sweeps_from_nwb(
+        nwb_data, sweeps["seed_2_noise"])
+
+    max_i = preprocess.max_i_for_depol_block_check(
+        core_1_lsq, core_2_lsq, noise_1, noise_2)
+
+    print(max_i)
+    # Prepare for passive fitting
+    return
 
     swc_path = paths["swc"] # swc - morphology data
     storage_directory = paths["storage_directory"]

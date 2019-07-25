@@ -529,21 +529,31 @@ def cap_check_grand_averages(sweeps, data_set):
     return grand_up, grand_down, t
 
 
-def max_i_for_depol_block_check(sweeps_input, data_set):
-    """Determine highest step to check for depolarization block"""
-    noise_1_sweeps = sweeps_input["seed_1_noise"]
-    noise_2_sweeps = sweeps_input["seed_2_noise"]
-    step_sweeps = sweeps_input["core_1_long_squares"]
-    all_sweeps = noise_1_sweeps + noise_2_sweeps + step_sweeps
+def max_i_for_depol_block_check(*sweep_set_args):
+    """Returns maximum current (in nA) to use for depolarization block check
 
+    Parameters
+    ----------
+    sweep_set_args: SweepSet objects
+        Current properties (sweep.i) values should be in pA
+
+    Returns
+    -------
+    Maximum current used across all sweeps (in nA)
+    """
     max_i = 0
-    for s in all_sweeps:
-        v, i, t = sf.get_sweep_v_i_t_from_set(data_set, s)
-        if np.max(i) > max_i:
-            max_i = np.max(i)
-    max_i += 10 # add 10 pA
-    max_i *= 1e-3 # convert to nA
+    for sweep_set in sweep_set_args:
+        if sweep_set is None:
+            continue
+
+        for swp in sweep_set.sweeps:
+            max_i = max(np.max(swp.i), max_i)
+
+    max_i += 10 # increase by 10 pA for additional safety
+    max_i *= 1e-3 # convert from pA to nA
+
     return max_i
+
 
 def preprocess(data_set, swc_data, dendrite_type_tag,
                sweeps, bridge_avg, storage_directory,
