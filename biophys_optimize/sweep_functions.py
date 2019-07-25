@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import numpy as np
-from allensdk.ephys.ephys_extractor import EphysSweepSetFeatureExtractor, _step_stim_amp
 from ipfx.sweep import Sweep, SweepSet
 import ipfx.stim_features as stf
 
