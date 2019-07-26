@@ -31,8 +31,8 @@ def sweeps_from_nwb(nwb_data, sweep_number_list):
         sampling_rate = sweep_data["sampling_rate"]
         dt = 1.0 / sampling_rate
         t = np.arange(0, len(sweep_data["stimulus"])) * dt
-        v = sweep_data["response"]
-        i = sweep_data["stimulus"]
+        v = sweep_data["response"] * 1e3 # data from NWB now comes in Volts
+        i = sweep_data["stimulus"] * 1e12 # data from NWB now comes in Amps
         sweep = Sweep(t=t,
                       v=v,
                       i=i,
