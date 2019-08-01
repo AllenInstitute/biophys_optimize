@@ -112,7 +112,7 @@ def main():
 	}
 
     sweeps = {k: get_sweeps_of_type(v, specimen_id, passed_only=True)
-              for k, v in sweep_types.items()}
+              for k, v in list(sweep_types.items())}
 
     if len(sweeps["cap_checks"]) > 0:
         bridge_avg = bridge_average(specimen_id, sweeps["cap_checks"])
