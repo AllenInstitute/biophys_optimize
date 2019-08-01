@@ -1,8 +1,9 @@
+from builtins import object
 import logging
 from neuron import h
 
 
-class NeuronEnvironment:
+class NeuronEnvironment(object):
     _log = logging.getLogger(__name__)
 
     def __init__(self, hoc_files_to_load, mod_library_path):

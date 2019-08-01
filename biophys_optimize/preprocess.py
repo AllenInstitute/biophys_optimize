@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from builtins import zip
+from builtins import object
 import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
@@ -19,7 +21,7 @@ from ipfx.sweep import SweepSet
 class NoUsableSweepsException(Exception): pass
 
 
-class FitStyle():
+class FitStyle(object):
     F6 = "f6"
     F6_NOAPIC = "f6_noapic"
 

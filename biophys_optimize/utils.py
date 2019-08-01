@@ -1,3 +1,4 @@
+from builtins import object
 import numpy as np
 import logging
 from ipfx import feature_extractor as fx
@@ -5,7 +6,7 @@ from .step_analysis import StepAnalysis
 from . import sweep_functions as sf
 from neuron import h
 
-class Utils:
+class Utils(object):
     def __init__(self):
         self.h = h
         self.stim = None

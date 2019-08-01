@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from builtins import range
 from neuron import h
 import numpy as np
 import argparse
