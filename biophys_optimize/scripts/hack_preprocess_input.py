@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import argparse
 import numpy as np
 import psycopg2
@@ -41,7 +42,7 @@ def preprocess_info_from_lims(specimen_id):
     conn.close()
 
     if not result:
-        print "Could not find info for specimen ", specimen_id
+        print("Could not find info for specimen ", specimen_id)
         return None
 
     return result
@@ -111,7 +112,7 @@ def main():
 	}
 
     sweeps = {k: get_sweeps_of_type(v, specimen_id, passed_only=True)
-              for k, v in sweep_types.iteritems()}
+              for k, v in list(sweep_types.items())}
 
     if len(sweeps["cap_checks"]) > 0:
         bridge_avg = bridge_average(specimen_id, sweeps["cap_checks"])

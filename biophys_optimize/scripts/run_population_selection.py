@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import allensdk.core.json_utilities as ju
 
@@ -21,7 +22,7 @@ class PopulationSelectionParameters(ags.ArgSchema):
 
 def main():
     module = ags.ArgSchemaParser(schema_type=PopulationSelectionParameters)
-    print module.args
+    print(module.args)
 
     fits = module.args["paths"]["fits"]
     populations = ps.population_info(fits)

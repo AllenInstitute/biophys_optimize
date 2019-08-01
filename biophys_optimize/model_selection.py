@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from builtins import range
 import argparse
 import json
 import os.path
@@ -21,7 +23,7 @@ def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
     errs = np.array([d["err"] for d in fit_results])
     sorted_order = np.argsort(errs)
     if len(noise_1_sweeps) == 0 and len(noise_2_sweeps) == 0:
-        print "No noise stimulus available to test - selecting the model with lowest error"
+        print("No noise stimulus available to test - selecting the model with lowest error")
         return fit_results[sorted_order[0]]
 
     nwb_path = path_info["nwb"]
@@ -53,14 +55,14 @@ def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
         dt = t[1] - t[0]
     max_t *= 1e3 # to ms
     dt *= 1e3 # to ms
-    print "Max t = ", max_t
+    print("Max t = ", max_t)
 
     # Set up
     if max_attempts > len(sorted_order):
         max_attempts = len(sorted_order)
 
     for ind in sorted_order[:max_attempts]:
-        print "Testing model ", ind
+        print("Testing model ", ind)
 
         fit = fit_results[ind]
         depol_okay = True
@@ -88,19 +90,19 @@ def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
             i_stim_vec = h.Vector(i)
             i_stim_vec.play(utils.stim._ref_amp, dt)
             utils.set_actual_parameters(fit["params"])
-            print "Starting run"
+            print("Starting run")
             h.finitialize()
             h.run()
-            print "Finished run"
+            print("Finished run")
             i_stim_vec.play_remove()
             if has_noise_block(v_vec.as_numpy(), t_vec.as_numpy()):
                 depol_okay = False
 
         if depol_okay:
-            print "Did not detect depolarization block on noise traces"
+            print("Did not detect depolarization block on noise traces")
             return fit
 
-    print "Failed to find model after looking at best {:d} organisms".format(max_attempts)
+    print("Failed to find model after looking at best {:d} organisms".format(max_attempts))
     return None
 
 
@@ -153,7 +155,7 @@ def has_noise_block(v, t, depol_block_threshold=-50.0, block_min_duration = 50.0
     if len(up_indexes) != 0:
         max_depol_duration = np.max([t[down_indexes[k]] - t[up_idx] for k, up_idx in enumerate(up_indexes)])
         if max_depol_duration > block_min_duration:
-            print "Encountered depolarization block"
+            print("Encountered depolarization block")
             return True
 
     return False

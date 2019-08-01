@@ -1,0 +1,8 @@
+deap
+neuron
+numpy
+pandas
+allensdk
+ipfx
+argschema
+pyyaml
