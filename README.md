@@ -2,6 +2,9 @@
 Optimization of single-cell biophysically detailed models
 
 Installation:
+
+You will need the [ipfx](https://github.com/alleninstitute/ipfx) package to perform feature extraction in this package. You can install `ipfx` by cloning that repository and running `pip install -e .` in the cloned repository's directory.
+
 ```bash
 $ python setup.py install
 ```
