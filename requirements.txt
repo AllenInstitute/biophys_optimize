@@ -4,5 +4,6 @@ numpy
 pandas
 allensdk
 ipfx
-argschema
+argschema <2.0
+marshmallow <3.0
 pyyaml
