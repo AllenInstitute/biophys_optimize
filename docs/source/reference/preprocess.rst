@@ -1,3 +1,4 @@
+=============
 Preprocessing
 =============
 
@@ -11,13 +12,11 @@ Preprocessing
 	is_sweep_good_quality
 	has_pause
 	target_features
-	prepare_for_passive_fit
 	cap_check_grand_averages
 	save_grand_averages
 	passive_fit_window
 	max_i_for_depol_block_check
 	swc_has_apical_compartments
-	FitStyle
 
 
 .. automodule:: biophys_optimize.step_analysis

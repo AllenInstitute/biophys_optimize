@@ -9,6 +9,7 @@ import argparse
 import allensdk.core.json_utilities as ju
 import numpy as np
 import biophys_optimize.neuron_passive_fit as npf
+from dataclasses import asdict
 
 import argschema as ags
 
@@ -54,7 +55,7 @@ def main(paths, passive_fit_type, output_json, **kwargs):
     else:
         raise Exception("unknown passive fit type: %s" % passive_fit_type)
 
-    ju.write(results_file, results)
+    ju.write(results_file, asdict(results))
     ju.write(output_json, { "paths": { passive_fit_type: results_file } })
 
 
