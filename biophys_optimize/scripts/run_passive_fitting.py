@@ -1,3 +1,10 @@
+"""
+Script to run passive fit variants.
+
+.. autoclass:: PassiveFittingParameters
+.. autoclass:: PassiveFittingPaths
+
+"""
 import argparse
 import allensdk.core.json_utilities as ju
 import numpy as np

@@ -1,3 +1,11 @@
+"""
+Script to run the optimization using an evolutionary algorithm.
+
+.. autoclass:: OptimizeParameters
+.. autoclass:: OptimizePaths
+
+"""
+
 import argparse
 from biophys_optimize.optimize import optimize
 import allensdk.core.json_utilities as ju

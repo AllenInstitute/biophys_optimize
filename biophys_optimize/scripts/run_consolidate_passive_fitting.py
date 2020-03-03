@@ -1,3 +1,11 @@
+"""
+Script to compare the results of the passive fitting variants and select the best one.
+
+.. autoclass:: ConsolidateParameters
+.. autoclass:: ConsolidatePaths
+
+"""
+
 import argparse
 
 import allensdk.core.json_utilities as ju
