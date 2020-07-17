@@ -4,13 +4,13 @@ import ipfx.stim_features as stf
 
 
 def sweeps_from_nwb(nwb_data, sweep_number_list):
-    """ Generate a SweepSet object from an NWB reader and list of sweep numbers
+    """ Generate a SweepSet object from an IPFX EphysDataSet and list of sweep numbers
 
     Sweeps should be in current-clamp mode.
 
     Parameters
     ----------
-    nwb_data: NwbReader
+    nwb_data: EphysDataSet
     sweep_number_list: list
         List of sweep numbers
 
@@ -23,30 +23,18 @@ def sweeps_from_nwb(nwb_data, sweep_number_list):
         End time of stimulus (seconds)
     """
 
-    sweep_list = []
+    sweep_set = nwb_data.sweep_set(sweep_number_list)
+
     start = None
     dur = None
-    for sweep_number in sweep_number_list:
-        sweep_data = nwb_data.get_sweep_data(sweep_number)
-        sampling_rate = sweep_data["sampling_rate"]
-        dt = 1.0 / sampling_rate
-        t = np.arange(0, len(sweep_data["stimulus"])) * dt
-        v = sweep_data["response"] * 1e3 # data from NWB now comes in Volts
-        i = sweep_data["stimulus"] * 1e12 # data from NWB now comes in Amps
-        sweep = Sweep(t=t,
-                      v=v,
-                      i=i,
-                      sampling_rate=sampling_rate,
-                      sweep_number=sweep_number,
-                      clamp_mode="CurrentClamp",
-                      epochs=None,
-                      )
-        sweep_list.append(sweep)
-        start, dur, _, _, _ = stf.get_stim_characteristics(i, t)
+    if len(sweep_set.sweeps) > 0:
+        first_sweep = sweep_set.sweeps[0]
+        start, dur, _, _, _ = stf.get_stim_characteristics(first_sweep.i, first_sweep.t)
+
     if start is None or dur is None:
-        return SweepSet(sweep_list), None, None
+        return sweep_set, None, None
     else:
-        return SweepSet(sweep_list), start, start + dur
+        return sweep_set, start, start + dur
 
 
 def sweep_set_for_model(t, v, i):

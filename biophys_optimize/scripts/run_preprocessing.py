@@ -13,7 +13,7 @@ import os
 import argschema as ags
 
 import allensdk.core.json_utilities as ju
-from ipfx.nwb_reader import create_nwb_reader
+from ipfx.dataset.create import create_ephys_data_set
 import biophys_optimize.preprocess as preprocess
 from biophys_optimize.step_analysis import StepAnalysis
 from biophys_optimize.sweep_functions import sweeps_from_nwb
@@ -44,7 +44,7 @@ class PreprocessorSweeps(ags.schemas.DefaultSchema):
 
 
 class PreprocessorParameters(ags.ArgSchema):
-    paths = ags.fields.Nested(PrepmnrocessorPaths)
+    paths = ags.fields.Nested(PreprocessorPaths)
     dendrite_type = ags.fields.Str(description="dendrite type (spiny or aspiny)",
         validation=lambda x: x in ["spiny", "aspiny"])
     sweeps = ags.fields.Nested(PreprocessorSweeps)
@@ -64,7 +64,7 @@ def main(paths, sweeps, dendrite_type, bridge_avg, passive_fit_start_time,
 
     # Extract Sweep objects (from IPFX package) from NWB file
     nwb_path = paths["nwb"] # nwb - neurodata without borders (ephys data)
-    nwb_data = create_nwb_reader(nwb_path)
+    nwb_data = create_ephys_data_set(nwb_file=nwb_path)
     core_1_lsq, c1_start, c1_end = sweeps_from_nwb(
         nwb_data, sweeps["core_1_long_squares"])
     core_2_lsq, c2_start, c2_end = sweeps_from_nwb(
