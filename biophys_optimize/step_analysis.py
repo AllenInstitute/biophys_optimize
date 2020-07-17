@@ -4,7 +4,7 @@ from ipfx import feature_extractor as fx
 from ipfx.stimulus_protocol_analysis import StimulusProtocolAnalysis
 
 class StepAnalysis(StimulusProtocolAnalysis):
-    """ Analysis of responses to step current stimuluation
+    """ Analysis of responses to step current stimulation
 
     Parameters
     ----------
@@ -27,8 +27,8 @@ class StepAnalysis(StimulusProtocolAnalysis):
         ----------
         sweep_set: SweepSet
 
-        exclude_clipped: bool (optional, default=False)
-            Whether to exclude clipped spikes from sweep-level features
+        exclude_clipped: bool, optional
+            Whether to exclude clipped spikes from sweep-level features (default False)
         """
         extra_sweep_features = ["stim_amp", "v_baseline"]
         self.analyze_basic_features(sweep_set,

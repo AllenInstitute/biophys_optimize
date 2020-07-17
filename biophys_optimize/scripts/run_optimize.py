@@ -1,5 +1,13 @@
+"""
+Script to run the optimization using an evolutionary algorithm.
+
+.. autoclass:: OptimizeParameters
+.. autoclass:: OptimizePaths
+
+"""
+
 import argparse
-from biophys_optimize.optimize import optimize
+from biophys_optimize.optimize import optimize, StimParams
 import allensdk.core.json_utilities as ju
 import logging
 
@@ -32,7 +40,9 @@ def main():
     results = optimize(hoc_files=module.args["paths"]["hoc_files"],
                        compiled_mod_library=module.args["paths"]["compiled_mod_library"],
                        morphology_path=module.args["paths"]["swc"],
-                       preprocess_results=preprocess_results,
+                       features=preprocess_results["features"],
+                       targets=preprocess_results["target_features"],
+                       stim_params=StimParams(preprocess_results["stimulus"]),
                        passive_results=passive_results,
                        fit_type=module.args["fit_type"],
                        fit_style_data=fit_style_data,

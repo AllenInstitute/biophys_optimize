@@ -1,3 +1,11 @@
+"""
+Script to select the starting population
+
+.. autoclass:: PopulationSelectionParameters
+.. autoclass:: PopulationSelectionPaths
+.. autoclass:: ModelFit
+"""
+
 from __future__ import print_function
 import argparse
 import allensdk.core.json_utilities as ju

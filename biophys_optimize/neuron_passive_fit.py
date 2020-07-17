@@ -6,12 +6,49 @@ import numpy as np
 import argparse
 import json
 import os.path
+from dataclasses import dataclass
 
 PASSIVE_FIT_1 = "passive_fit_1"
 PASSIVE_FIT_2 = "passive_fit_2"
 PASSIVE_FIT_ELEC = "passive_fit_elec"
 
+@dataclass
+class PassiveFitResult:
+    """DataClass for passive fit results.
+
+    Attributes
+    ----------
+    ra : float
+        Axial resistivity
+    cm : float
+        Specific membrane capacitance
+    rm : float
+        Specific membrane resistance
+    a1 : float
+        Surface area of the soma and axon compartments
+    a2 : float
+        Surface area of the dendrite compartments
+    """
+    ra: float
+    cm: float
+    rm: float
+    err: float
+    a1: float
+    a2: float
+
+
+
 def initialize_neuron(swc_path, file_paths):
+    """ Initialize neuron with morphology and load hoc files
+
+    Parameters
+    ----------
+    swc_path : str
+        Path to SWC file
+    file_paths : list
+        List of str file paths of files for NEURON to load
+
+    """
     h.load_file("stdgui.hoc")
     h.load_file("import3d.hoc")
 
@@ -83,20 +120,20 @@ def passive_fit_1(up_data, down_data, fit_window_start, fit_window_end,
 
     Parameters
     ----------
-    up_data: array, shape (n_samples, 2)
+    up_data: (n_samples, 2) array
         Positive-going times and voltage responses
-    down_data: array, shape (n_samples, 2)
+    down_data: (n_samples, 2) array
         Negative-going times and voltage responses
     fit_window_start: float
         Start of fit window (ms)
     fit_window_end: float
         End of fit window (ms)
-    n_init: int (optional, default 10)
-        Number of random starts for passive fitting
+    n_init: int, optional
+        Number of random starts for passive fitting (default 10)
 
     Returns
     -------
-    Dictionary of passive fit and membrane area values
+    :class:`PassiveFitResult`
     """
     mrf = _common_config(fit_window_start, fit_window_end, up_data, down_data)
 
@@ -116,16 +153,8 @@ def passive_fit_1(up_data, down_data, fit_window_start, fit_window_end,
             fit_Rm = h.Rm
             minerr = mrf.opt.minerr
 
-    results = {
-        "ra": fit_Ri,
-        "cm": fit_Cm,
-        "rm": fit_Rm,
-        "err": minerr,
-        "a1": h.somaaxon_area(),
-        "a2": h.alldend_area(),
-    }
-
-    return results
+    return PassiveFitResult(
+        fit_Ri, fit_Cm, fit_Rm, minerr, h.somaaxon_area(), h.alldend_area())
 
 
 def passive_fit_2(up_data, down_data, fit_window_start, fit_window_end,
@@ -147,7 +176,7 @@ def passive_fit_2(up_data, down_data, fit_window_start, fit_window_end,
 
     Returns
     -------
-    Dictionary of passive fit and membrane area values
+    :class:`PassiveFitResult`
     """
     mrf = _common_config(fit_window_start, fit_window_end, up_data, down_data)
 
@@ -166,16 +195,8 @@ def passive_fit_2(up_data, down_data, fit_window_start, fit_window_end,
             fit_Rm = h.Rm
             minerr = mrf.opt.minerr
 
-    results = {
-        "ra": fit_Ri,
-        "cm": fit_Cm,
-        "rm": fit_Rm,
-        "err": minerr,
-        "a1": h.somaaxon_area(),
-        "a2": h.alldend_area(),
-    }
-
-    return results
+    return PassiveFitResult(
+        fit_Ri, fit_Cm, fit_Rm, minerr, h.somaaxon_area(), h.alldend_area())
 
 
 def passive_fit_elec(up_data, down_data, fit_window_start, fit_window_end,
@@ -201,7 +222,7 @@ def passive_fit_elec(up_data, down_data, fit_window_start, fit_window_end,
 
     Returns
     -------
-    Dictionary of passive fit and membrane area values
+    :class:`PassiveFitResult`
     """
     mrf = _common_config(fit_window_start, fit_window_end, up_data, down_data)
 
@@ -226,16 +247,8 @@ def passive_fit_elec(up_data, down_data, fit_window_start, fit_window_end,
             fit_Rm = h.Rm
             minerr = mrf.opt.minerr
 
-    results = {
-        "ra": fit_Ri,
-        "cm": fit_Cm,
-        "rm": fit_Rm,
-        "err": minerr,
-        "a1": h.somaaxon_area(),
-        "a2": h.alldend_area(),
-    }
-
-    return results
+    return PassiveFitResult(
+        fit_Ri, fit_Cm, fit_Rm, minerr, h.somaaxon_area(), h.alldend_area())
 
 
 

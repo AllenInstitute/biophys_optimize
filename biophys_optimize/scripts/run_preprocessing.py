@@ -1,3 +1,12 @@
+"""
+Script to preprocess sweeps and morphologies before optimization.
+
+.. autoclass:: PreprocessorParameters
+.. autoclass:: PreprocessorSweeps
+.. autoclass:: PreprocessorPaths
+
+
+"""
 import argparse
 import pandas as pd
 import os
@@ -35,7 +44,7 @@ class PreprocessorSweeps(ags.schemas.DefaultSchema):
 
 
 class PreprocessorParameters(ags.ArgSchema):
-    paths = ags.fields.Nested(PreprocessorPaths)
+    paths = ags.fields.Nested(PrepmnrocessorPaths)
     dendrite_type = ags.fields.Str(description="dendrite type (spiny or aspiny)",
         validation=lambda x: x in ["spiny", "aspiny"])
     sweeps = ags.fields.Nested(PreprocessorSweeps)

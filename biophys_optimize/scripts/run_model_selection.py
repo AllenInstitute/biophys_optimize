@@ -1,3 +1,13 @@
+"""
+Script to select the best model from the population
+
+.. autoclass:: ModelSelectionParameters
+.. autoclass:: ModelSelectionPaths
+.. autoclass:: ModelFitStyles
+.. autoclass:: ModelFit
+
+"""
+
 import logging
 import argparse
 import allensdk.core.json_utilities as ju
@@ -16,11 +26,11 @@ class ModelFitStyles(ags.schemas.DefaultSchema):
     f13 = ags.fields.InputFile(description="")
     f13_noapic = ags.fields.InputFile(description="")
 
-class ModelFit(ags.schemas.DefaultSchema): 
+class ModelFit(ags.schemas.DefaultSchema):
     fit_type = ags.fields.Str(description="")
     hof_fit = ags.fields.InputFile(description="")
     hof = ags.InputFile(description="")
-    
+
 class ModelSelectionPaths(ags.schemas.DefaultSchema):
     swc = ags.fields.InputFile(description="path to swc file")
     nwb = ags.fields.InputFile(description="path to nwb file")
@@ -33,7 +43,7 @@ class ModelSelectionPaths(ags.schemas.DefaultSchema):
     preprocess_results = ags.fields.InputFile(description="preprocess results file")
     hoc_files = ags.fields.List(ags.fields.Str, description="list of hoc files")
     compiled_mod_library = ags.fields.InputFile(description="path to compiled mod library file")
-    
+
 class ModelSelectionParameters(ags.ArgSchema):
     paths = ags.fields.Nested(ModelSelectionPaths)
     noise_1_sweeps = ags.fields.List(ags.fields.Int, description="list of noise 1 sweep numbers")
@@ -45,7 +55,7 @@ def main():
 
     swc_path = module.args["paths"]["swc"]
     fit_style_paths = module.args["paths"]["fit_styles"]
-    best_fit_json_path = module.args["paths"]["best_fit_json_path"] 
+    best_fit_json_path = module.args["paths"]["best_fit_json_path"]
     passive = ju.read(module.args["paths"]["passive_results"])
     preprocess = ju.read(module.args["paths"]["preprocess_results"])
 
@@ -60,7 +70,7 @@ def main():
     logging.info("building fit data")
     fit_style_data = ju.read(module.args["paths"]["fit_styles"][best_fit["fit_type"]])
     fit_data = ms.build_fit_data(best_fit["params"], passive, preprocess, fit_style_data)
-    
+
     logging.info("writing fit data: %s", best_fit_json_path)
     ju.write(best_fit_json_path, fit_data)
 
@@ -74,4 +84,4 @@ def main():
     ju.write(module.args["output_json"], output)
 
 if __name__ == "__main__": main()
-    
+
