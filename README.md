@@ -29,7 +29,7 @@ $ pip install -e .
 
 If you already have a local IPFX repository, do the following in that repository to switch to an earlier version with NWB1 support:
 ```bash
-$ git checkout tags/nwb1-support nwb1-support
+$ git checkout tags/nwb1-support -b nwb1-support
 ```
 
 In either case, you can then install `biophys_optimize` by:
