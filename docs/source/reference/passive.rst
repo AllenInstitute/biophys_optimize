@@ -4,8 +4,8 @@ Passive Fitting
 
 .. automodule:: biophys_optimize.neuron_passive_fit
 
-Individual passive fitting functions
-====================================
+Passive fitting functions
+=========================
 
 .. autosummary::
 	:toctree: generated/
@@ -29,7 +29,7 @@ Setup functions
 .. autosummary::
 	:toctree: generated/
 	
-	PassiveFitResult
+	initialize_neuron
 
 
 Selection from different passive fitting runs

@@ -12,6 +12,7 @@ import numpy as np
 import random
 import json
 import os.path
+from dataclasses import dataclass
 from deap import algorithms, base, creator, tools
 from .utils import Utils
 from .environment import NeuronEnvironment
@@ -31,8 +32,50 @@ v_vec = None
 i_vec = None
 
 
+@dataclass
+class StimParams:
+    """ Dataclass for stimulation parameters
+
+    Attributes
+    ----------
+    amplitude : float
+        Stimulus amplitude (nA)
+    delay : float
+        Delay before stimulus start (ms)
+    duration : float
+        Duration of stimulus (ms)
+    """
+    amplitude: float
+    delay: float
+    duration: float
+
+
 def eval_param_set(params, do_block_check, max_stim_amp, stim_params,
         features, targets, t_vec):
+    """Calculate a fitness score (lower is better) for a set of model parameters
+
+    Parameters
+    ----------
+    params : array
+        Normalized (from 0 to 1) parameters for model
+    do_block_check : bool
+        Whether to check for depolarization block
+    max_stim_amp : float
+        Stimulation amplitude to use for depolarization block check
+    stim_params : :class:`StimParams`
+        Stimulation parameters
+    features : list
+        List of feature names (str)
+    targets : dict
+        Dictionary with feature names as keys and elements as dicts with "mean" and "stdev" key-value pairs
+    t_vec : NEURON Vector
+        time vector
+
+    Returns
+    -------
+    float
+        Sum of feature errors for use as a fitness score
+    """
     utils.set_normalized_parameters(params)
     h = utils.h
     h.finitialize()
@@ -53,15 +96,31 @@ def eval_param_set(params, do_block_check, max_stim_amp, stim_params,
         if check_for_block(max_stim_amp, stim_params):
             feature_errors = min_fail_penalty * np.ones_like(feature_errors)
         # Reset the stimulus back
-        utils.set_iclamp_params(stim_params["amplitude"], stim_params["delay"],
-            stim_params["duration"])
+        utils.set_iclamp_params(stim_params.amplitude, stim_params.delay,
+            stim_params.duration)
 
     return [np.sum(feature_errors)]
 
 
 def check_for_block(max_stim_amp, stim_params):
-    utils.set_iclamp_params(max_stim_amp, stim_params["delay"],
-        stim_params["duration"])
+    """Check for presence of depolarization block at high stimulus amplitudes
+
+    Parameters
+    ----------
+    max_stim_amp : float
+        Stimulus amplitude for depolarization block check (nA)
+    stim_params : :class:`StimParams`
+        Stimulus parameters (only delay and duration used)
+
+
+    Returns
+    -------
+    bool
+        Whether the model exhibits depolarization block
+    """
+
+    utils.set_iclamp_params(max_stim_amp, stim_params.delay,
+        stim_params.duration)
     h = utils.h
     h.finitialize()
     h.run()
@@ -103,6 +162,23 @@ def check_for_block(max_stim_amp, stim_params):
 
 
 def uniform(lower, upper, size=None):
+    """Population generation with uniformly random variables
+
+    Parameters
+    ----------
+    lower : float
+        Lower bound for parameter
+    upper : float
+        Upper bound for parameter
+    size : int, optional
+        Number of samples to generate. If None, generates one sample
+
+    Returns
+    -------
+    list
+        Returns list with ``size`` samples uniformly distributed between ``lower`` and ``upper``
+    """
+
     if size is None:
         return [random.uniform(a, b) for a, b in zip(lower, upper)]
     else:
@@ -110,28 +186,91 @@ def uniform(lower, upper, size=None):
 
 
 def best_sum(d):
+    """ Return the lowest sum across columns
+
+    Parameters
+    ----------
+    d : (n, p) array
+        Array with `n` samples each with `p` feature errors
+
+    Returns
+    -------
+    float
+        Minimum feature error sum across samples in `d`
+    """
     return np.sum(d, axis=1).min()
 
 
 def initPopulation(pcls, ind_init, popfile):
+    """ Load starting population from file
+
+    Parameters
+    ----------
+    pcls : function
+        Population creation function (e.g. `list`)
+    ind_init : function
+        Individual initialization function
+    popfile : str
+        Path to population text file (with actual parameter values)
+
+    Returns
+    -------
+    any
+        Result of `pcls` call
+    """
     popdata = np.loadtxt(popfile)
     return pcls(ind_init(utils.normalize_actual_parameters(line)) for line in popdata.tolist())
 
 
 def optimize(hoc_files, compiled_mod_library, morphology_path,
-             preprocess_results, passive_results,
+             features, targets, stim_params, passive_results,
              fit_type, fit_style_data,
              ngen, seed, mu,
              storage_directory,
              starting_population=None):
+    """ Perform embarrassingly parallel evolutionary optimization with NEURON
+
+    Parameters
+    ----------
+    hoc_files : list
+        List of hoc files for NEURON to load
+    compiled_mod_library : str
+        Path to compiled .mod file library
+    morphology_path : str
+        Path to morphology SWC file
+    features : list
+        List of features to match
+    targets : dict
+        Dictionary with feature names as keys and elements as dicts with "mean" and "stdev" key-value pairs
+    stim_params : :class:`StimParams`
+        Stimulation parameters
+    passive_results : dict
+        Dictionary with passive parameters
+    fit_type : str
+        Code for fit type (for output filenames)
+    fit_style_data : dict
+        Dictionary of fit style parameters
+    ngen : int
+        Number of generations
+    seed : int
+        Seed for random number generator
+    mu : int
+        Size of each generation
+    storage_directory : str
+        Path to storage directory
+    starting_population : str, optional
+        Path to file with starting population. If `None`, a random starting population
+        is generated.
+
+    Returns
+    -------
+    dict
+        Dictionary with paths to output files
+    """
     # need to be global since cannot pass via partial functions to
     # parallel NEURON mapping function
     global utils
     global v_vec, i_vec, t_vec
-
-    features = fit_style_data["features"]
-    targets = preprocess_results["target_features"]
-    stim_params = preprocess_results["stimulus"]
 
     do_block_check = fit_style_data["check_depol_block"]
     if do_block_check:
@@ -165,7 +304,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
     v_vec, i_vec, t_vec = utils.record_values()
 
     try:
-        neuron_parallel.runworker()
+        neuron_parallel._runworker()
 
         print("Setting up GA")
         random.seed(seed)
@@ -281,7 +420,7 @@ def optimize(hoc_files, compiled_mod_library, morphology_path,
             }
         }
 
-        neuron_parallel.done()
+        neuron_parallel._done()
 
         return output
     except:

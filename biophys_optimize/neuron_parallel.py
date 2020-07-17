@@ -5,6 +5,7 @@ import logging
 _pc = h.ParallelContext()
 
 def map(func, *iterables):
+    """Submit function (`func`) and arguments (`iterables`) to NEURON parallel context"""
     start_time = pc_time()
     userids = []
     userid = 200 # arbitrary, but needs to be a positive integer
@@ -14,27 +15,27 @@ def map(func, *iterables):
         userids.append(userid)
         userid += 1
 
-    results = dict(working())
+    results = dict(_working())
 
-    end_time = pc_time()
+    end_time = _pc_time()
     logging.info("Map took {} seconds".format(end_time - start_time))
     return [results[userid] for userid in userids]
 
 
-def working():
+def _working():
     while _pc.working():
         userid = int(_pc.userid())
         ret = _pc.pyret()
         yield userid, ret
 
 
-def runworker():
+def _runworker():
     _pc.runworker()
 
 
-def done():
+def _done():
     _pc.done()
 
 
-def pc_time():
+def _pc_time():
     return _pc.time()

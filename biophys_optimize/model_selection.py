@@ -18,6 +18,27 @@ def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
                  noise_2_sweeps, max_attempts=20):
     """Choose model with best error that does not exhibit depolarization block
     on noise sweeps
+
+    Parameters
+    ----------
+    fit_results : list
+        List of dictionaries containing individual model fit information
+    path_info : dict
+        Dictionary of file paths
+    passive : dict
+        Dictionary of passive parameters
+    v_init : float
+        Initial voltage for stimulation (mV)
+    noise_1_sweeps, noise_2_sweeps : list
+        List of sweep numbers that used "Noise 1" and "Noise 2" protocols. Used to look
+        for depolarization block that was not evoked by high-amplitude step currents.
+    max_attempts : int, optional
+        Number of models to evaluate before giving up
+
+    Returns
+    -------
+    dict
+        Dictionary with best-fit model information
     """
 
     errs = np.array([d["err"] for d in fit_results])
@@ -107,6 +128,24 @@ def select_model(fit_results, path_info, passive, v_init, noise_1_sweeps,
 
 
 def build_fit_data(genome_vals, passive, preprocess, fit_style_info):
+    """ Create dictionary for saving model info in JSON format
+
+    Parameters
+    ----------
+    genome_vals : list-like
+        List of numerical model parameters
+    passive : dict
+        Dictionary of passive parameters
+    preprocess : dict
+        Dictionary with pre-processing output
+    fit_style_info :
+        Dictionary with fit style parameters
+
+    Returns
+    -------
+    dict
+        Dictionary of model parameters in standard format
+    """
     json_data = {}
 
     # passive
@@ -144,6 +183,24 @@ def build_fit_data(genome_vals, passive, preprocess, fit_style_info):
 
 
 def has_noise_block(v, t, depol_block_threshold=-50.0, block_min_duration = 50.0):
+    """ Determine whether the model exhibits depolarization block with noise stimuli
+
+    Parameters
+    ----------
+    v : array-like
+        Voltage response of model
+    t : array-like
+        Time points for `v`
+    depol_block_threshold : float, optional
+        Minimum value to identify depolarized periods in `v`
+    block_min_duration : float, optional
+        Minimum value of depolarized period to count as depolarization block (in ms)
+
+    Returns
+    -------
+    bool
+        Whether depolarization block was found
+    """
     stim_start_idx = 0
     stim_end_idx = len(t) - 1
     bool_v = np.array(v > depol_block_threshold, dtype=int)
@@ -162,6 +219,18 @@ def has_noise_block(v, t, depol_block_threshold=-50.0, block_min_duration = 50.0
 
 
 def fit_info(fits):
+    """ Create list with individual model info as dictionaries
+
+    Parameters
+    ----------
+    fits : dict
+        Dictionary with fitting output path information
+
+    Returns
+    -------
+    list
+        List of model information dictionaries
+    """
     info = []
     for fit in fits:
         fit_type = fit["fit_type"]

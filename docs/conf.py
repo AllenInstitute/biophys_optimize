@@ -19,8 +19,8 @@ from argschema.autodoc import process_schemas
 # -- Project information -----------------------------------------------------
 
 project = 'biophys_optimize'
-copyright = '2020, Nathan Gouwens, David Feng'
-author = 'Nathan Gouwens, David Feng'
+copyright = '2020, Allen Institute for Brain Science'
+author = 'Allen Institute for Brain Science'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
@@ -38,12 +38,12 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
-# generate autosummary pages
-autosummary_generate=True
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+# generate autosummary pages
+autosummary_generate=True
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

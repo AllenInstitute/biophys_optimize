@@ -6,15 +6,34 @@ from .step_analysis import StepAnalysis
 from . import sweep_functions as sf
 from neuron import h
 
+
 class Utils(object):
+    """ Class to implement and manipulate models in NEURON
+
+    Attributes
+    ----------
+    h : NEURON simulation object
+    stim : NEURON IClamp object
+    cell : NEURON object
+        Cell object in NEURON
+    channels : dict
+        Dictionary of channel mechanism names and maximum conductances
+    addl_params : dict
+        Dictionary of additional (non-channel) mechanism names and values
+    """
+
     def __init__(self):
         self.h = h
         self.stim = None
-        self.stim_curr = None
-        self.sampling_rate = None
         self.cell = self.h.cell()
 
     def generate_morphology(self, morph_filename):
+        """Instantiate a morphology from an SWC file at `morph_filename`
+
+        Also deletes the axonal compartments from the SWC file and inserts an axonal
+        "stub" in its place.
+        """
+
         cell = self.cell
 
         swc = self.h.Import3d_SWC_read()
@@ -39,6 +58,19 @@ class Utils(object):
         h.define_shape()
 
     def load_cell_parameters(self, passive, conditions, channels, addl_params):
+        """Set passive and active cell parameters
+
+        Parameters
+        ----------
+        passive : dict
+            Dictionary of passive parameters
+        conditions : dict
+            Dictionary of experimental conditions (specifically reversal potentials)
+        channels : dict
+            Dictionary of channel mechanism names and maximum conductances
+        addl_params : dict
+            Dictionary of additional (non-channel) mechanism names and values
+        """
         cell = self.cell
         self.channels = channels
         self.addl_params = addl_params
@@ -73,6 +105,10 @@ class Utils(object):
                 sec.ek = erev["ek"]
 
     def set_normalized_parameters(self, params):
+        """ Set model parameters to normalized list of parameters
+
+        Normalization is between 0 and 1.
+        """
         channels_and_others = self.channels + self.addl_params
         for i, p in enumerate(params):
             c = channels_and_others[i]
@@ -87,6 +123,10 @@ class Utils(object):
                 setattr(sec, param_name, value)
 
     def set_actual_parameters(self, params):
+        """ Set model parameters to actual-valued list of parameters
+
+        Values are on scale used by NEURON
+        """
         channels_and_others = self.channels + self.addl_params
         for i, p in enumerate(params):
             c = channels_and_others[i]
@@ -98,6 +138,7 @@ class Utils(object):
                 setattr(sec, param_name, p)
 
     def normalize_actual_parameters(self, params):
+        """ Normalize parameters to 0 and 1 using information in `self.channels` and `self.addl_params`"""
         params_array = np.array(params)
         channels_and_others = self.channels + self.addl_params
         max_vals = np.array([c["max"] for c in channels_and_others])
@@ -107,6 +148,7 @@ class Utils(object):
         return normalized_params.tolist()
 
     def actual_parameters_from_normalized(self, params):
+        """ Calculate actual values of parameters that have been normalized """
         channels_and_others = self.channels + self.addl_params
         actual_params = [(p *
             (channels_and_others[i]["max"] -
@@ -116,14 +158,48 @@ class Utils(object):
         return actual_params
 
     def insert_iclamp(self):
+        """ Create an IClamp object at the soma """
         self.stim = self.h.IClamp(self.cell.soma[0](0.5))
 
     def set_iclamp_params(self, amp, delay, dur):
+        """ Set IClamp object parameters
+
+        Parameters
+        ----------
+        amp : float
+            Stimulus amplitude (nA)
+        delay : float
+            Delay to start of stimulus (ms)
+        dur : float
+            Duration of stimulus (ms)
+        """
         self.stim.amp = amp
         self.stim.delay = delay
         self.stim.dur = dur
 
     def calculate_feature_errors(self, t_ms, v, i, feature_names, targets):
+        """ Calculate feature errors (z-scored difference)
+
+        Apply penalties for particular situations (no spikes, etc.)
+
+        Parameters
+        ----------
+        t_ms : array-like
+            time vector in ms
+        v : array-like
+            voltage vector in mV
+        i : array-like
+            current vector
+        feature_names : list
+            list of feature names for error calculation
+        targets : dict
+            dictionary of feature target values (means and stdevs)
+
+        Returns
+        -------
+        array
+            array of per-feature errors
+        """
         # Special case checks and penalty values
         minimum_num_spikes = 2
         missing_penalty_value = 20.0
@@ -195,6 +271,22 @@ class Utils(object):
         return errs
 
     def calculate_features(self, t_ms, v, i, feature_names):
+        """Calculate sweep features
+
+        Parameters
+        ----------
+        t_ms : array-like
+            time vector in ms
+        v : array-like
+            voltage vector in mV
+        i : array-like
+            current vector
+
+        Returns
+        -------
+        array
+            Array of sweep features
+        """
         delay = self.stim.delay * 1e-3
         duration = self.stim.dur * 1e-3
         t = t_ms * 1e-3
@@ -217,6 +309,7 @@ class Utils(object):
         return np.array(out_features)
 
     def record_values(self):
+        """Create and return NEURON Vectors to record voltage, current, and time"""
         v_vec = self.h.Vector()
         t_vec = self.h.Vector()
         i_vec = self.h.Vector()
