@@ -55,15 +55,16 @@ def sweep_set_for_model(t, v, i):
     Parameters
     ----------
     t: array
-        Time data (seconds)
+        Time data (sec)
     v: array
-        Voltage data
+        Voltage data (mV)
     i: array
-        Current stimulus data
+        Current stimulus data (nA)
 
     Returns
     -------
-    SweepSet containing one Sweep
+    SweepSet
+        Contains one Sweep object
     """
     sampling_rate = 1 / (t[1] - t[0])
     sweep = Sweep(t=t,

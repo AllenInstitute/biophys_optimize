@@ -81,7 +81,31 @@ def _cap_check_indices(i):
 
 def select_core1_trace(sweep_set, start, end,
         exceed_rheobase=39.0, min_isi_cv=0.3, fraction_isi_cv=0.2):
-    """Identify a Core 1 long square sweep as the optimization target"""
+    """Identify a Core 1 long square sweep as the optimization target
+
+    Parameters
+    ----------
+    sweep_set : SweepSet
+        Set of Core 1 sweeps
+    start : float
+        Start time in seconds
+    end : float
+        End time in seconds
+    exceed_rheobase : float, optional
+        Minimum value above rheobase (in pA) to consider for sweep selection
+    min_isi_cv : float, optional
+        Absolute value coefficient of variation of the ISIs to re-consider traces at higher amplitude.
+        If the value of a currently selected set of sweeps exceeds `min_isi_cv`, then traces with
+        higher amplitudes will be compared and possibly selected instead.
+    fraction_isi_cv : float, optional
+        Value for comparison to currently selected sweeps. If a higher amplitude set of sweeps have CV_ISIs
+        below (1 - `fraction_isi_cv`) times the current average, then switch selection to those sweeps.
+
+    Returns
+    -------
+    array
+        Array of sweeps
+    """
     step_analysis = StepAnalysis(start, end)
     step_analysis.analyze(sweep_set)
     sweep_info = step_analysis.sweep_features()
@@ -99,13 +123,24 @@ def select_core1_trace(sweep_set, start, end,
 
     sweep_to_use_mean_isi_cv = 1e12
     sweeps_to_use = []
+
+    # consider each amplitude for which there are spiking sweeps
     for a in unique_amps:
+        # If the sweep isn't at least `exceed_rheobase` above rheobase, don't use it
         if a < exceed_rheobase + rheobase_amp:
             continue
+
+        # Select the traces at this target amplitude and their quality flags
         mask = np.rint(sweep_info["stim_amp"].values) == a
         quality = sweep_info.loc[mask, "quality"].values
         if np.sum(quality) == 0:
+            # only proceed if at least some values are of good quality
             continue
+
+        # Check the CV_ISI of the traces
+        # If the currently chosen sweeps have an avg CV_ISI that's too high (above `min_isi_cv`), then see if
+        # the currently considered set of sweeps have a CV_ISI lower than (1 - `fraction_isi_cv`) times the current value
+        # If so, switch to those.
         isi_cv = sweep_info.loc[mask, "isi_cv"].values[quality]
         if ((sweep_to_use_mean_isi_cv >= min_isi_cv) and
             np.all(isi_cv < (1. - fraction_isi_cv) * sweep_to_use_mean_isi_cv)):
@@ -121,27 +156,28 @@ def select_core1_trace(sweep_set, start, end,
 
 def is_sweep_good_quality(spike_times, start, end, min_rate=5):
     """Check whether the sweep passes several quality criteria:
-    - Matches or exceeds defined minimum rate
-    - Is not transient, defined as the time from the last spike to the
-      end of the stimulus being twice as long as the average of the last two
-      interspike intervals
-    - Does not have a pause (defined by has_pause())
+
+        - Matches or exceeds defined minimum rate
+        - Is not transient, defined as the time from the last spike to the end of the stimulus being twice as long as the average of the last two interspike intervals
+        - Does not have a pause (defined by :func:`has_pause`)
 
     Parameters
     ----------
-    spike_times: array
-
-    end: float
+    spike_times : array
+        Array of spike times
+    end : float
         End time of stimulus interval
 
-    min_rate: float
+    min_rate : float
         Minimum firing rate to consider (spikes/sec)
 
     Returns
     -------
-    good_quality: bool
+    bool
         Whether sweep should be considered for fitting
+
     """
+
     rate = np.sum((spike_times > start) & (spike_times < end)) / (end - start)
 
     if rate < min_rate:
@@ -172,11 +208,13 @@ def has_pause(isis):
 
     Parameters
     ----------
-    isis: array
+    isis : array
+        Array of ISI durations
 
     Returns
     -------
-    Whether set of ISIs contains a pause
+    bool
+        Whether set of ISIs contains a pause
     """
     if len(isis) <= 2:
         return False
@@ -196,15 +234,16 @@ def target_features(sweep_data, spike_data_list, min_std_dict=None):
     Parameters
     ----------
     sweep_data: DataFrame
-        Rows have values for each sweep
+        DataFrame where rows have values for each sweep
     spike_data_list: list
-        DataFrames of individual spike values for each sweep
-    min_std_dict: dict (optional)
+        List of DataFrames of individual spike values for each sweep
+    min_std_dict: dict, optional
         If not supplied, values will be loaded from default YAML file
 
     Returns
     -------
-    DataFrame of target feature means and standard deviations
+    DataFrame
+        Target feature means (column `mean`) and standard deviations (column `stdev`)
     """
 
     if min_std_dict is None:
@@ -276,33 +315,33 @@ def select_core_1_or_core_2_sweeps(
 
     Prefers Core 2 sweeps because they are longer and usually have repeats.
     Selects a Core 1 sweep if the Core 2 sweeps do not exist or if the
-    f-I curve has shifted by at least 30 pA (since Core 1 occurs earlier in the
+    f-I curve has shifted by at least `fi_shift_threshold` pA (since Core 1 occurs earlier in the
     overall experimental protocol)
 
     Parameters
     ----------
-    core_1_lsq: SweepSet
+    core_1_lsq : SweepSet
         "Core 1" long-square sweeps (1 second long stimulus, no repeats expected)
-    core_1_start: float
+    core_1_start : float
         Start time of stimulus interval for Core 1 sweeps
-    core_1_end: float
+    core_1_end : float
         End time of stimulus interval for Core 1 sweeps
-    core_2_lsq: SweepSet
+    core_2_lsq : SweepSet
         "Core 2" long-square sweeps (2 seconds long stimulus, repeats expected)
-    core_2_start: float
+    core_2_start : float
         Start time of stimulus interval for Core 2 sweeps
-    core_2_end: float
+    core_2_end : float
         End time of stimulus interval for Core 2 sweeps
-    fi_shift_threshold: float (optional, default 30.0)
+    fi_shift_threshold : float, optional
         Maximum allowed f-I curve shift to still select Core 2 sweeps
 
     Returns
     -------
-    sweeps_to_fit: SweepSet
-
-    start: float
+    SweepSet
+        Set of sweeps to fit
+    start : float
         time of stimulus start (in seconds)
-    end: float
+    end : float
         time of stimulus end (in seconds)
     """
 
@@ -360,63 +399,25 @@ def select_core_1_or_core_2_sweeps(
     return SweepSet(sweeps_to_fit), start, end
 
 
-def prepare_for_passive_fit(sweeps, bridge_avg, is_spiny, data_set,
-        storage_directory, threshold=0.2, start_time=4.0):
-    """Collect information for passive fit variations on capacitance-check sweeps
+def save_grand_averages(grand_up, grand_down, t, storage_directory):
+    """Save capacitance check grand averages to local storage
+
+    Need to save to separate files so that they can be loaded by NEURON fitting scripts
 
     Parameters
     ----------
-    sweeps : list
-        list of sweep numbers of capacitance-check sweeps
-    bridge_avg: float
-        average of bridge-balance value during the sweeps
-    is_spiny: bool
-        True if neuron has dendritic spines
-    data_set: NwbDataSet
-        container of sweep data
-    storage_directory: str
-        path to storage directory
-    threshold: float (optional, default 0.2)
-        Fraction that up and down traces can diverge before the fitting window
-        ends
-    start_time: float (optional, default 4.0)
-        Start time (in ms) of passive fitting window
+    grand_up, grand_down : array-like
+        Series of voltages responses to positive (`grand_up`) and negative (`grand_down`) current pulses
+    t : array-like
+        Time values for `grand_up` and `grand_down`
+    storage_directory : str
+        Path to storage directory for files
 
     Returns
     -------
-    paths: dict
-        key-value set of relevant file paths
-    passive_info: dict
-        information about fitting for NEURON
+    upfile, downfile : str
+        Paths to the saved files
     """
-    if len(sweeps) == 0:
-        logging.info("No cap check trace found")
-        return {}, {"should_run": False}
-
-    grand_up, grand_down, t = cap_check_grand_averages(sweeps, data_set)
-
-
-    paths = {
-        "up": upfile,
-        "down": downfile,
-    }
-
-    escape_time = passive_fit_window(grand_up, grand_down, t, start_time, threshold)
-
-    passive_info = {
-        "should_run": True,
-        "bridge": bridge_avg,
-        "fit_window_start": start_time,
-        "fit_window_end": escape_time,
-        "electrode_cap": 1.0,
-        "is_spiny": is_spiny,
-    }
-
-    return paths, passive_info
-
-
-def save_grand_averages(grand_up, grand_down, t, storage_directory):
-    """Save to local storage to be loaded by NEURON fitting scripts"""
     Manifest.safe_mkdir(storage_directory)
     upfile = os.path.join(storage_directory, "upbase.dat")
     downfile = os.path.join(storage_directory, "downbase.dat")
@@ -431,27 +432,27 @@ def save_grand_averages(grand_up, grand_down, t, storage_directory):
 
 def passive_fit_window(grand_up, grand_down, t, start_time=4.0, threshold=0.2,
         rolling_average_length=100):
-    """Determine how long the upward and downward responses are consistent
+    """Determine how long the upward and downward responses are consistent with each other
 
     Parameters
     ----------
-    grand_up: array
+    grand_up : array
         Average of positive-going capacitance check voltage responses
-    grand_down: array
+    grand_down : array
         Average of negative-going capacitance check voltage responses
-    t: array
+    t : array
         Time points for grand_up and grand_down
-    start_time: float (optional, default 4.0)
+    start_time : float (optional, default 4.0)
         Start time (in units of t) of passive fitting window
-    threshold: float (optional, default 0.2)
+    threshold : float (optional, default 0.2)
         Fraction to which up and down traces can diverge before the fitting
         window ends
-    rolling_average_length: int (optional, default 100)
+    rolling_average_length : int (optional, default 100)
         Length (in points) of window for rolling mean for divergence check
 
     Returns
     -------
-    escape_time: float
+    escape_time : float
         Time of divergence greater than `threshold`, or end of trace
     """
     # Determine for how long the upward and downward responses are consistent
@@ -489,11 +490,11 @@ def cap_check_grand_averages(sweep_set, extra_interval=2.0):
 
     Returns
     -------
-    grand_up: array
-    grand_down: array
+    grand_up : array
+    grand_down : array
         Averages of responses to depolarizing (`grand_up`) and hyperpolarizing
         (`grand_down`) pulses
-    t: array
+    t : array
         Time data for grand_up and grand_down in ms
     """
     grand_up_list = []
@@ -533,12 +534,13 @@ def max_i_for_depol_block_check(*sweep_set_args):
 
     Parameters
     ----------
-    sweep_set_args: SweepSet objects
-        Current properties (sweep.i) values should be in pA
+    sweep_set_args : list
+        List of SweepSet objects. Current properties (sweep.i) values should be in pA
 
     Returns
     -------
-    Maximum current used across all sweeps (in nA)
+    float
+        Maximum current used across all sweeps (in nA)
     """
     max_i = 0
     for sweep_set in sweep_set_args:
@@ -555,7 +557,18 @@ def max_i_for_depol_block_check(*sweep_set_args):
 
 
 def swc_has_apical_compartments(swc_file):
-    """ Returns whether SWC file has any apical dendrite compartments"""
+    """ Returns whether SWC file has any apical dendrite compartments
+
+    Parameters
+    ----------
+    swc_file : str
+        Path to SWC file
+
+    Returns
+    -------
+    bool
+        Whether the SWC file has any apical dendrite compartments
+    """
 
     # Reading data into dataframe since we don't need a full, connected
     # Morphology object

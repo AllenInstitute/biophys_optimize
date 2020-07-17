@@ -1,3 +1,12 @@
+"""
+Script to preprocess sweeps and morphologies before optimization.
+
+.. autoclass:: PreprocessorParameters
+.. autoclass:: PreprocessorSweeps
+.. autoclass:: PreprocessorPaths
+
+
+"""
 import argparse
 import pandas as pd
 import os
